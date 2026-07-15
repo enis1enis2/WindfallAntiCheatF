@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "windfall-fabric",
+  "version": "${version}",
+  "name": "Windfall AntiCheat F",
+  "description": "Fabric port of Windfall AntiCheat — comprehensive anti-cheat with 53 checks",
+  "authors": ["Enis"],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/windfall-fabric/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["io.windfall.anticheat.WindfallMod"]
+  },
+  "mixins": ["windfall-fabric.mixins.json"],
+  "accessWidener": "windfall-fabric.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21.5",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

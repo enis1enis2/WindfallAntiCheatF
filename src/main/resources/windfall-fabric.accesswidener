@@ -1,0 +1,3 @@
+accessWidener v2 named
+# Allow access to ServerPlayNetworkHandler fields for packet interception
+accessible method net/minecraft/server/network/ServerPlayNetworkHandler sendPacket (Lnet/minecraft/network/Packet;)V

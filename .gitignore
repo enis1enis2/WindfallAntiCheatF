@@ -1,0 +1,10 @@
+build/
+.gradle/
+*.iml
+.idea/
+out/
+bin/
+.gradle
+fabric-loom/
+runs/
+*.log
