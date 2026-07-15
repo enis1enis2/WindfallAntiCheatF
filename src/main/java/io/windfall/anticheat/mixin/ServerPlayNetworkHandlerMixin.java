@@ -1,14 +1,10 @@
 package io.windfall.anticheat.mixin;
 
 import io.windfall.anticheat.WindfallMod;
-import io.windfall.anticheat.core.compensation.TransactionManager;
 import io.windfall.anticheat.core.player.PlayerManager;
 import io.windfall.anticheat.core.player.WindfallPlayer;
+import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerAbilitiesS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.RespawnS2CPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,40 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerPlayNetworkHandler.class)
 public abstract class ServerPlayNetworkHandlerMixin {
-
-    @Inject(method = "onPlayerPosition", at = @At("HEAD"))
-    private void windfall_onPlayerPosition(UpdatePlayerPositionC2SPacket packet, CallbackInfo ci) {
-        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
-        ServerPlayerEntity player = handler.getPlayer();
-        if (player == null) return;
-        WindfallMod mod = WindfallMod.getInstance();
-        if (mod == null) return;
-        PlayerManager pm = mod.getPlayerManager();
-        WindfallPlayer wp = pm.get(player.getUuid());
-        if (wp == null || !wp.isValid()) return;
-        if (wp.isRespawned()) wp.setRespawned(false);
-        wp.setPosition(player.getX(), player.getY(), player.getZ());
-        wp.setOnGround(player.isOnGround());
-        wp.setMovedSinceTick(true);
-        mod.getCheckManager().onPacketReceive(wp, packet);
-        wp.getActionData().recordBlockPlace(0, 0, 0); // placeholder
-    }
-
-    @Inject(method = "onPlayerRotation", at = @At("HEAD"))
-    private void windfall_onPlayerRotation(LookDirectionC2SPacket packet, CallbackInfo ci) {
-        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
-        ServerPlayerEntity player = handler.getPlayer();
-        if (player == null) return;
-        WindfallMod mod = WindfallMod.getInstance();
-        if (mod == null) return;
-        PlayerManager pm = mod.getPlayerManager();
-        WindfallPlayer wp = pm.get(player.getUuid());
-        if (wp == null || !wp.isValid()) return;
-        wp.setYaw(player.getYaw());
-        wp.setPitch(player.getPitch());
-        wp.setOnGround(player.isOnGround());
-        mod.getCheckManager().onPacketReceive(wp, packet);
-    }
 
     @Inject(method = "onPlayerMove", at = @At("HEAD"))
     private void windfall_onPlayerMove(PlayerMoveC2SPacket packet, CallbackInfo ci) {
@@ -64,7 +26,11 @@ public abstract class ServerPlayNetworkHandlerMixin {
         WindfallPlayer wp = pm.get(player.getUuid());
         if (wp == null || !wp.isValid()) return;
         if (wp.isRespawned()) wp.setRespawned(false);
+        wp.setPosition(player.getX(), player.getY(), player.getZ());
+        wp.setYaw(player.getYaw());
+        wp.setPitch(player.getPitch());
         wp.setOnGround(player.isOnGround());
+        wp.setMovedSinceTick(true);
         mod.getCheckManager().onPacketReceive(wp, packet);
     }
 
@@ -81,8 +47,8 @@ public abstract class ServerPlayNetworkHandlerMixin {
         mod.getCheckManager().onPacketReceive(wp, packet);
     }
 
-    @Inject(method = "onInteractEntity", at = @At("HEAD"))
-    private void windfall_onInteractEntity(InteractEntityC2SPacket packet, CallbackInfo ci) {
+    @Inject(method = "onPlayerInteractEntity", at = @At("HEAD"))
+    private void windfall_onInteractEntity(PlayerInteractEntityC2SPacket packet, CallbackInfo ci) {
         ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
         ServerPlayerEntity player = handler.getPlayer();
         if (player == null) return;
@@ -95,8 +61,8 @@ public abstract class ServerPlayNetworkHandlerMixin {
         mod.getCheckManager().onPacketReceive(wp, packet);
     }
 
-    @Inject(method = "onKeepAlive", at = @At("HEAD"))
-    private void windfall_onKeepAlive(KeepAliveC2SPacket packet, CallbackInfo ci) {
+    @Inject(method = "onHandSwing", at = @At("HEAD"))
+    private void windfall_onHandSwing(HandSwingC2SPacket packet, CallbackInfo ci) {
         ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
         ServerPlayerEntity player = handler.getPlayer();
         if (player == null) return;
@@ -105,7 +71,84 @@ public abstract class ServerPlayNetworkHandlerMixin {
         PlayerManager pm = mod.getPlayerManager();
         WindfallPlayer wp = pm.get(player.getUuid());
         if (wp == null || !wp.isValid()) return;
-        mod.getTransactionManager().processTransaction(wp, (short) (packet.readLong() & 0xFFFF));
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onPlayerAction", at = @At("HEAD"))
+    private void windfall_onPlayerAction(PlayerActionC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onCloseHandledScreen", at = @At("HEAD"))
+    private void windfall_onCloseScreen(CloseHandledScreenC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onClickSlot", at = @At("HEAD"))
+    private void windfall_onClickSlot(ClickSlotC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onCreativeInventoryAction", at = @At("HEAD"))
+    private void windfall_onCreative(CreativeInventoryActionC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onPlayerInteractBlock", at = @At("HEAD"))
+    private void windfall_onInteractBlock(PlayerInteractBlockC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onPlayerInteractItem", at = @At("HEAD"))
+    private void windfall_onInteractItem(PlayerInteractItemC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
         mod.getCheckManager().onPacketReceive(wp, packet);
     }
 }

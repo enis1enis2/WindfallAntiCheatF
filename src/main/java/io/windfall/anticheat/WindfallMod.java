@@ -96,7 +96,7 @@ public final class WindfallMod implements ModInitializer {
         ServerTickEvents.END_SERVER_TICK.register(this::onTick);
 
         long elapsed = (System.nanoTime() - start) / 1_000_000;
-        LOGGER.info("Windfall F v1.0.0 enabled in {}ms (MC {})", elapsed, server.getMotd());
+        LOGGER.info("Windfall F v1.0.0 enabled in {}ms", elapsed);
     }
 
     private void onTick(MinecraftServer server) {

@@ -4,7 +4,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
 
 public class ViolationPattern {
     private final Path dataDir;
@@ -61,7 +61,7 @@ public class ViolationPattern {
                 oos.writeObject(new ArrayList<>(history));
             }
         } catch (IOException e) {
-            logger.warning("Failed to save violation history for " + uuid);
+            logger.warn("Failed to save violation history for " + uuid);
         }
     }
 

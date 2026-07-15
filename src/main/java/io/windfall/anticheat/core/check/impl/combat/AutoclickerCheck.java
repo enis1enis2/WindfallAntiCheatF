@@ -9,9 +9,14 @@ public class AutoclickerCheck extends Check implements PacketCheck {
     private final Map<UUID, List<Long>> clickTimestamps = new HashMap<>();
 
     @Override public void onPacketReceive(WindfallPlayer player, Object packet) {
-        if (!(packet instanceof net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket)) return;
-        net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket p = (net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket) packet;
-        if (p.getType() != net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket.Type.ATTACK) return;
+        if (!(packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket p)) return;
+        final boolean[] isAttack = {false};
+        p.handle(new net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket.Handler() {
+            @Override public void interact(net.minecraft.util.Hand hand) {}
+            @Override public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d pos) {}
+            @Override public void attack() { isAttack[0] = true; }
+        });
+        if (!isAttack[0]) return;
         List<Long> timestamps = clickTimestamps.computeIfAbsent(player.getUuid(), k -> new ArrayList<>());
         long now = System.currentTimeMillis();
         timestamps.add(now);

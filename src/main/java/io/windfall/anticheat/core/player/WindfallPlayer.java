@@ -14,7 +14,7 @@ public class WindfallPlayer {
 
         public static Pose fromFabric(EntityPose pose) {
             switch (pose) {
-                case FALL_FLYING: return FALL_FLYING;
+                case GLIDING: return FALL_FLYING;
                 case SWIMMING: return SWIMMING;
                 case SLEEPING: return SLEEPING;
                 case SPIN_ATTACK: return SPIN_ATTACK;
@@ -306,9 +306,8 @@ public class WindfallPlayer {
             net.minecraft.util.math.BlockPos blockPos = sp.getBlockPos();
             net.minecraft.world.World world = sp.getWorld();
             net.minecraft.block.BlockState blockState = world.getBlockState(blockPos);
-            net.minecraft.block.Material material = blockState.getMaterial();
-            this.cachedInWater = material.isLiquid();
-            this.cachedInLava = world.getBlockState(blockPos).getBlock() == net.minecraft.block.Blocks.LAVA;
+            this.cachedInWater = blockState.getFluidState().isOf(net.minecraft.fluid.Fluids.WATER);
+            this.cachedInLava = blockState.getFluidState().isOf(net.minecraft.fluid.Fluids.LAVA);
             this.cachedOnHoney = false;
         } catch (Exception e) {
             this.cachedInWater = false; this.cachedInLava = false; this.cachedOnHoney = false;
@@ -322,7 +321,7 @@ public class WindfallPlayer {
             this.cachedHasLevitation = serverPlayer.hasStatusEffect(StatusEffects.LEVITATION);
             StatusEffectInstance levitation = serverPlayer.getStatusEffect(StatusEffects.LEVITATION);
             this.cachedLevitationAmplifier = levitation != null ? levitation.getAmplifier() + 1 : 1.0;
-            this.cachedIsFallFlying = serverPlayer.getAbilities().flying || serverPlayer.isFallFlying();
+            this.cachedIsFallFlying = serverPlayer.getAbilities().flying || serverPlayer.isGliding();
             this.cachedHasRiptide = false;
         } catch (Exception e) {
             this.cachedSpeedMultiplier = 1.0; this.cachedSlownessMultiplier = 1.0;

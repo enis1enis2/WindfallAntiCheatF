@@ -1,3 +1,2 @@
 accessWidener v2 named
-# Allow access to ServerPlayNetworkHandler fields for packet interception
-accessible method net/minecraft/server/network/ServerPlayNetworkHandler sendPacket (Lnet/minecraft/network/Packet;)V
+# Access widener for Windfall Fabric — currently unused, kept for future needs

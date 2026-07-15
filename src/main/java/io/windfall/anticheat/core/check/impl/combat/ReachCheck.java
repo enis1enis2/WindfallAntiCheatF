@@ -26,9 +26,14 @@ public class ReachCheck extends Check implements PacketCheck {
             net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket p = (net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket) packet;
             recordAttackerSnapshot(player);
         }
-        if (!(packet instanceof net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket)) return;
-        net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket p = (net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket) packet;
-        if (p.getType() != net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket.Type.ATTACK) return;
+        if (!(packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket p)) return;
+        final boolean[] isAttack = {false};
+        p.handle(new net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket.Handler() {
+            @Override public void interact(net.minecraft.util.Hand hand) {}
+            @Override public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d pos) {}
+            @Override public void attack() { isAttack[0] = true; }
+        });
+        if (!isAttack[0]) return;
 
         java.util.Deque<AttackerSnapshot> snapshots = attackerSnapshots.getOrDefault(player.getUuid(), new ArrayDeque<>());
         long now = System.currentTimeMillis();

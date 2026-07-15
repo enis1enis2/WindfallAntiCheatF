@@ -1,17 +1,9 @@
 package io.windfall.anticheat.mixin;
 
-import io.windfall.anticheat.WindfallMod;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(MinecraftServer.class)
 public abstract class MinecraftServerMixin {
-
-    @Inject(method = "getTicksPerSecond", at = @At("HEAD"), cancellable = true)
-    private void windfall_getTps(CallbackInfoReturnable<Float> cir) {
-        // Can be used for TPS-based adaptive threshold
-    }
+    // TPS tracking handled via server tick events — no mixin needed
 }

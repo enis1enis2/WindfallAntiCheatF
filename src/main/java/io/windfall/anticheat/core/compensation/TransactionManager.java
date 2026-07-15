@@ -2,7 +2,7 @@ package io.windfall.anticheat.core.compensation;
 
 import io.windfall.anticheat.WindfallMod;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import net.minecraft.network.packet.s2c.play.PingPongS2CPacket;
+import net.minecraft.network.packet.s2c.common.KeepAliveS2CPacket;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +28,7 @@ public class TransactionManager {
         short id = (short) (nextTransactionId++ & 0xFFFF);
         pendingTransactions.put(player.getUuid(), new TransactionEntry(id));
         try {
-            player.getServerPlayer().networkHandler.sendPacket(new PingPongS2CPacket(id));
+            player.getServerPlayer().networkHandler.sendPacket(new KeepAliveS2CPacket(id));
         } catch (Exception e) {
             // Player may have disconnected
         }

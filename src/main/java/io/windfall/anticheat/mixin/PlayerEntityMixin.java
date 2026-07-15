@@ -26,7 +26,7 @@ public abstract class PlayerEntityMixin {
         WindfallPlayer wp = pm.get(sp.getUuid());
         if (wp != null) {
             wp.setSprinting(sp.isSprinting());
-            wp.setGliding(sp.isFallFlying());
+            wp.setGliding(sp.isGliding());
         }
     }
 }

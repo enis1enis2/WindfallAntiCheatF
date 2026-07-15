@@ -118,14 +118,14 @@ public class CheckManager {
         packetFingerprint.recordPacketInterval(player.getUuid(), 50);
         for (Check check : checks) {
             if (!check.isEnabled()) continue;
-            try { check.onPacketReceive(player, event); } catch (Exception e) { WindfallMod.LOGGER.fine("Check {} error: {}", check.getName(), e.getMessage()); }
+            try { check.onPacketReceive(player, event); } catch (Exception e) { WindfallMod.LOGGER.debug("Check {} error: {}", check.getName(), e.getMessage()); }
         }
     }
 
     public void onPacketSend(WindfallPlayer player, Object event) {
         for (Check check : checks) {
             if (!check.isEnabled()) continue;
-            try { check.onPacketSend(player, event); } catch (Exception e) { WindfallMod.LOGGER.fine("Check {} error: {}", check.getName(), e.getMessage()); }
+            try { check.onPacketSend(player, event); } catch (Exception e) { WindfallMod.LOGGER.debug("Check {} error: {}", check.getName(), e.getMessage()); }
         }
     }
 
@@ -179,7 +179,7 @@ public class CheckManager {
 
     public void removePlayer(UUID uuid) {
         for (Check check : checks) {
-            try { check.removePlayer(uuid); } catch (Exception e) { WindfallMod.LOGGER.fine("Failed to remove player from {}: {}", check.getName(), e.getMessage()); }
+            try { check.removePlayer(uuid); } catch (Exception e) { WindfallMod.LOGGER.debug("Failed to remove player from {}: {}", check.getName(), e.getMessage()); }
         }
     }
 }

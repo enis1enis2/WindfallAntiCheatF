@@ -30,26 +30,26 @@ public class PunishmentEngine {
         if (totalVl >= config.getPunishmentPermbanVl() && currentTier < 4) {
             ServerPlayerEntity sp = player.getServerPlayer();
             if (sp != null) {
-                sp.networkHandler.disconnect(net.text.Text.literal(config.getPunishmentPermbanReason()));
+                sp.networkHandler.disconnect(net.minecraft.text.Text.literal(config.getPunishmentPermbanReason()));
             }
             punishmentTier.put(uuid, 4);
         } else if (totalVl >= config.getPunishmentTempbanVl() && currentTier < 3) {
             ServerPlayerEntity sp = player.getServerPlayer();
             if (sp != null) {
-                sp.networkHandler.disconnect(net.text.Text.literal(config.getPunishmentTempbanReason()));
+                sp.networkHandler.disconnect(net.minecraft.text.Text.literal(config.getPunishmentTempbanReason()));
             }
             punishmentTier.put(uuid, 3);
         } else if (totalVl >= config.getPunishmentKickVl() && currentTier < 2) {
             ServerPlayerEntity sp = player.getServerPlayer();
             if (sp != null) {
-                sp.networkHandler.disconnect(net.text.Text.literal(config.getPunishmentKickMessage()));
+                sp.networkHandler.disconnect(net.minecraft.text.Text.literal(config.getPunishmentKickMessage()));
             }
             punishmentTier.put(uuid, 2);
             lastKickTime.put(uuid, now);
         } else if (totalVl >= config.getPunishmentWarnVl() && currentTier < 1) {
             ServerPlayerEntity sp = player.getServerPlayer();
             if (sp != null) {
-                sp.sendMessage(net.text.Text.literal(config.getPunishmentWarnMessage()), false);
+                sp.sendMessage(net.minecraft.text.Text.literal(config.getPunishmentWarnMessage()), false);
             }
             punishmentTier.put(uuid, 1);
             lastWarnTime.put(uuid, now);

@@ -116,8 +116,8 @@ public abstract class Check {
             ty = player.getGroundY();
             tz = player.getGroundZ();
         }
-        ServerWorld world = sp.getWorld();
-        sp.teleport(world, tx, ty, tz, player.getYaw(), player.getPitch());
+        ServerWorld world = (ServerWorld) sp.getWorld();
+        sp.teleportTo(new net.minecraft.world.TeleportTarget(world, new Vec3d(tx, ty, tz), Vec3d.ZERO, player.getYaw(), player.getPitch(), net.minecraft.world.TeleportTarget.NO_OP));
     }
 
     public int getViolationLevel(WindfallPlayer player) {

@@ -10,7 +10,7 @@ public class FastHealCheck extends Check implements PacketCheck {
 
     @Override public void onPacketReceive(WindfallPlayer player, Object packet) {}
     @Override public void onPacketSend(WindfallPlayer player, Object packet) {
-        if (!(packet instanceof net.minecraft.network.packet.s2c.play.UpdateHealthS2CPacket)) return;
+        if (!(packet instanceof net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket)) return;
         long now = System.currentTimeMillis();
         Long last = lastDamageTime.get(player.getUuid());
         if (last != null && (now - last) < 500) {

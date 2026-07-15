@@ -6,9 +6,14 @@ import io.windfall.anticheat.core.player.WindfallPlayer;
 @CheckData(name="Criticals A", stableKey="windfall.combat.criticals", decay=0.02, setbackVl=20)
 public class CriticalsCheck extends Check implements PacketCheck {
     @Override public void onPacketReceive(WindfallPlayer player, Object packet) {
-        if (!(packet instanceof net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket)) return;
-        net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket p = (net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket) packet;
-        if (p.getType() != net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket.Type.ATTACK) return;
+        if (!(packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket p)) return;
+        final boolean[] isAttack = {false};
+        p.handle(new net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket.Handler() {
+            @Override public void interact(net.minecraft.util.Hand hand) {}
+            @Override public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d pos) {}
+            @Override public void attack() { isAttack[0] = true; }
+        });
+        if (!isAttack[0]) return;
         if (player.isOnGround() && !player.isSneaking() && player.getVerticalSpeed() < 0.001) {
             double deltaY = Math.abs(player.getY() - player.getLastY());
             if (deltaY < 0.001 && deltaY > 0) {

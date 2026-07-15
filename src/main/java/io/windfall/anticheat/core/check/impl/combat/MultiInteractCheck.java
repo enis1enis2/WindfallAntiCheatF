@@ -9,7 +9,7 @@ public class MultiInteractCheck extends Check implements PacketCheck {
     private final Map<UUID, Long> lastInteract = new HashMap<>();
 
     @Override public void onPacketReceive(WindfallPlayer player, Object packet) {
-        if (!(packet instanceof net.minecraft.network.packet.c2s.play.InteractEntityC2SPacket)) return;
+        if (!(packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket)) return;
         long now = System.currentTimeMillis();
         Long last = lastInteract.get(player.getUuid());
         if (last != null && (now - last) < 5) {
