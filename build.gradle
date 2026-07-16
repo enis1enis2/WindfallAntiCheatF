@@ -25,8 +25,8 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Discord webhook
-    implementation "com.google.code.gson:gson:2.11.0"
-    include "com.google.code.gson:gson:2.11.0"
+    implementation "com.google.code.gson:gson:2.14.0"
+    include "com.google.code.gson:gson:2.14.0"
 
     // Test dependencies
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
