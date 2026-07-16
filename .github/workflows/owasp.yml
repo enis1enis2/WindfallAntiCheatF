@@ -20,10 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
 
       - name: Cache OWASP Dependency-Check data
@@ -36,19 +36,22 @@ jobs:
 
       - name: Download OWASP Dependency-Check CLI
         run: |
-          OWASP_VERSION="12.1.7"
-          wget -q "https://github.com/jeremylong/DependencyCheck/releases/download/v${OWASP_VERSION}/dependency-check-${OWASP_VERSION}-release.zip" -O /tmp/owasp-dc.zip
+          OWASP_VERSION=$(curl -s https://dependency-check.github.io/DependencyCheck/current.txt)
+          echo "Downloading OWASP Dependency-Check v${OWASP_VERSION}..."
+          curl -sL "https://github.com/dependency-check/DependencyCheck/releases/download/v${OWASP_VERSION}/dependency-check-${OWASP_VERSION}-release.zip" -o /tmp/owasp-dc.zip
+          ls -la /tmp/owasp-dc.zip
           unzip -q /tmp/owasp-dc.zip -d /opt
+          ls -la /opt/dependency-check/bin/
           echo "/opt/dependency-check/bin" >> $GITHUB_PATH
 
       - name: Grant execute permission
-        run: chmod +x /opt/dependency-check/bin/dependency-check
+        run: chmod +x /opt/dependency-check/bin/dependency-check.sh
 
       - name: Run OWASP Dependency-Check
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          dependency-check \
+          dependency-check.sh \
             --project "Windfall Fabric" \
             --scan . \
             --exclude ".git" \
@@ -66,6 +69,6 @@ jobs:
         with:
           name: owasp-report
           path: |
-            dependency-check-report.*
-            report/*
+            dependency-check-report.html
+            dependency-check-report.json
           if-no-files-found: warn
