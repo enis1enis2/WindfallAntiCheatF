@@ -1,24 +1,92 @@
 package io.windfall.anticheat.core.physics;
 
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.registry.Registries;
+import net.minecraft.util.Identifier;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 public final class PhysicsConstants {
+
     private PhysicsConstants() {}
-    public static final double WALK_SPEED = 0.2257;
-    public static final double SPRINT_SPEED = 0.2873;
-    public static final double FLY_SPEED = 0.0558;
-    public static final double SWIM_SPEED = 0.0199;
-    public static final double SNEAK_SPEED = 0.1231;
-    public static final double ICE_SPEED_MULTIPLIER = 2.5;
-    public static final double SOUL_SAND_MULTIPLIER = 0.4;
-    public static final double HONEY_MULTIPLIER = 0.4;
+
+    public static final double GRAVITY = 0.08;
+    public static final double PLAYER_JUMP_MOMENTUM = 0.42;
+    public static final double AIR_DRAG = 0.98;
     public static final double WATER_DRAG = 0.800000011920929;
-    public static final double LAVA_DRAG = 0.0196;
-    public static final double AIR_DRAG = 0.9800000190734863;
-    public static final double JUMP_VELOCITY = 0.41999998688697815;
-    public static final double SPRINT_JUMP_VELOCITY = 0.41999998688697815;
+    public static final double LAVA_DRAG = 0.5;
+    public static final double GROUND_FRICTION = 0.91;
+    public static final double SOUL_SAND_FRICTION = 0.6;
+    public static final double ICE_FRICTION = 0.98;
+    public static final double SLIME_FRICTION = 0.8;
+    public static final double HONEY_FRICTION = 0.4;
+    public static final double WEB_FRICTION = 0.25;
+    public static final double PLAYER_WALK_SPEED = 0.1;
+    public static final double PLAYER_SPRINT_MULTIPLIER = 1.3;
+    public static final double PLAYER_CROUCH_MULTIPLIER = 0.3;
+    public static final double MIN_MOVEMENT_THRESHOLD = 0.003;
+    public static final double PLAYER_WIDTH = 0.6;
+    public static final double PLAYER_HEIGHT_NORMAL = 1.8;
+    public static final double PLAYER_HEIGHT_SNEAKING = 1.5;
+    public static final double PLAYER_EYE_HEIGHT_NORMAL = 1.62;
+    public static final double PLAYER_EYE_HEIGHT_SNEAKING = 1.27;
+    public static final double SWIM_BOOST = 0.03999999910593033;
+    public static final double WEB_SLOWDOWN = 0.25;
+    public static final double LADDER_CLIMB_SPEED = 0.15;
+    public static final double BUBBLE_COLUMN_SPEED = 0.03999999910593033;
+    public static final double POWDER_SNOW_SLOWDOWN = 0.9;
+    public static final double WATER_VERTICAL_MOTION = -0.02;
+    public static final double LAVA_VERTICAL_MOTION = -0.02;
     public static final double STEP_HEIGHT = 0.6;
-    public static final double MAX_FALL_SPEED = -3.92;
-    public static final double GRAVITY = -0.0784;
-    public static final double ELTRA_LAUNCH_SPEED = 0.15;
-    public static final double KNOCKBACK_VERTICLE = 0.4000000059604645;
-    public static final double KNOCKBACK_HORIZONTAL = 0.4000000059604645;
+    public static final double SPRINT_JUMP_BOOST_HORIZONTAL = 0.2;
+
+    private static final Map<Block, Double> FRICTION_MAP = new ConcurrentHashMap<>();
+
+    static {
+        addFriction("soul_sand", SOUL_SAND_FRICTION);
+        addFriction("soul_soil", SOUL_SAND_FRICTION);
+        addFriction("honey_block", HONEY_FRICTION);
+        addFriction("cobweb", WEB_FRICTION);
+        addFriction("string", WEB_FRICTION);
+        addFriction("ice", ICE_FRICTION);
+        addFriction("packed_ice", ICE_FRICTION);
+        addFriction("blue_ice", ICE_FRICTION);
+        addFriction("slime_block", SLIME_FRICTION);
+    }
+
+    private static void addFriction(String blockName, double friction) {
+        try {
+            Identifier id = Identifier.of("minecraft", blockName);
+            Block block = Registries.BLOCK.get(id);
+            if (block != Blocks.AIR || "air".equals(blockName)) {
+                FRICTION_MAP.put(block, friction);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static double getBlockFriction(Block block) {
+        if (block == null) return GROUND_FRICTION;
+        return FRICTION_MAP.getOrDefault(block, GROUND_FRICTION);
+    }
+
+    public static double getJumpBoostHorizontal(int amplifier) {
+        return 0.1 * (amplifier + 1);
+    }
+
+    public static double getJumpBoostVertical(int amplifier, boolean is19Plus) {
+        if (is19Plus) {
+            return 0.1 * (amplifier + 1);
+        }
+        return 0.15 * (amplifier + 1);
+    }
+
+    public static double getSpeedEffectMultiplier(int amplifier) {
+        return 1.0 + 0.2 * (amplifier + 1);
+    }
+
+    public static double getSlownessEffectMultiplier(int amplifier) {
+        return Math.max(0.0, 1.0 - 0.15 * (amplifier + 1));
+    }
 }

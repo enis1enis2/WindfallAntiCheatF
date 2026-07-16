@@ -1,52 +1,61 @@
 package io.windfall.anticheat.core.physics;
 
-public class PredictionContext {
-    private double motionX, motionY, motionZ;
-    private double posX, posY, posZ;
-    private boolean onGround;
-    private boolean sprinting;
-    private boolean sneaking;
-    private boolean swimming;
-    private boolean gliding;
-    private boolean jumping;
-    private double flySpeed;
-    private double lastReportedX, lastReportedY, lastReportedZ;
+import io.windfall.anticheat.core.player.WindfallPlayer;
 
-    public PredictionContext(double x, double y, double z, double mx, double my, double mz,
-                             boolean onGround, boolean sprinting, boolean sneaking, boolean swimming,
-                             boolean gliding, boolean jumping) {
-        this.posX = x; this.posY = y; this.posZ = z;
-        this.motionX = mx; this.motionY = my; this.motionZ = mz;
-        this.onGround = onGround;
-        this.sprinting = sprinting; this.sneaking = sneaking;
-        this.swimming = swimming; this.gliding = gliding;
-        this.jumping = jumping;
-        this.flySpeed = 0.05;
+public final class PredictionContext {
+
+    public final double x, y, z;
+    public final double lastX, lastY, lastZ;
+    public final double lastLastX, lastLastY, lastLastZ;
+    public final double deltaX, deltaY, deltaZ;
+    public final boolean onGround, lastOnGround;
+    public final boolean sprinting, sneaking, swimming, climbing;
+    public final int protocolVersion;
+    public final double horizontalSpeed;
+    public final double lastHorizontalSpeed;
+    public final double baseSpeed;
+    public final double predictedMaxHorizontalSpeed;
+    public final boolean inWater, inLava;
+    public final boolean hasSlowFalling, hasLevitation;
+
+    public PredictionContext(WindfallPlayer player) {
+        this.x = player.getX();
+        this.y = player.getY();
+        this.z = player.getZ();
+        this.lastX = player.getLastX();
+        this.lastY = player.getLastY();
+        this.lastZ = player.getLastZ();
+        this.lastLastX = player.getLastLastX();
+        this.lastLastY = player.getLastLastY();
+        this.lastLastZ = player.getLastLastZ();
+
+        this.deltaX = player.getDeltaX();
+        this.deltaY = player.getDeltaY();
+        this.deltaZ = player.getDeltaZ();
+
+        this.onGround = player.isOnGround();
+        this.lastOnGround = player.isLastOnGround();
+        this.sprinting = player.isSprinting();
+        this.sneaking = player.isSneaking();
+        this.swimming = player.isSwimming();
+        this.climbing = player.isClimbing();
+        this.protocolVersion = player.getProtocolVersion();
+
+        this.horizontalSpeed = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+
+        double ldx = lastX - lastLastX;
+        double ldz = lastZ - lastLastZ;
+        this.lastHorizontalSpeed = Math.sqrt(ldx * ldx + ldz * ldz);
+
+        double speedMult = PredictionEngine.getSpeedPotionMultiplier(player);
+        double slowMult = PredictionEngine.getSlownessPotionMultiplier(player);
+        this.baseSpeed = PredictionEngine.calculateBaseSpeed(sprinting, sneaking, speedMult, slowMult);
+        this.predictedMaxHorizontalSpeed = PredictionEngine.calculateMaxHorizontalSpeed(
+                baseSpeed, lastHorizontalSpeed, onGround, climbing, swimming, protocolVersion);
+
+        this.inWater = PredictionEngine.checkInWater(player);
+        this.inLava = PredictionEngine.checkInLava(player);
+        this.hasSlowFalling = PredictionEngine.checkSlowFalling(player);
+        this.hasLevitation = PredictionEngine.checkLevitation(player);
     }
-
-    public double getMotionX() { return motionX; }
-    public double getMotionY() { return motionY; }
-    public double getMotionZ() { return motionZ; }
-    public void setMotionX(double v) { this.motionX = v; }
-    public void setMotionY(double v) { this.motionY = v; }
-    public void setMotionZ(double v) { this.motionZ = v; }
-    public double getPosX() { return posX; }
-    public double getPosY() { return posY; }
-    public double getPosZ() { return posZ; }
-    public void setPosX(double v) { this.posX = v; }
-    public void setPosY(double v) { this.posY = v; }
-    public void setPosZ(double v) { this.posZ = v; }
-    public boolean isOnGround() { return onGround; }
-    public void setOnGround(boolean v) { this.onGround = v; }
-    public boolean isSprinting() { return sprinting; }
-    public boolean isSneaking() { return sneaking; }
-    public boolean isSwimming() { return swimming; }
-    public boolean isGliding() { return gliding; }
-    public boolean isJumping() { return jumping; }
-    public double getFlySpeed() { return flySpeed; }
-    public void setFlySpeed(double v) { this.flySpeed = v; }
-    public void setLastReportedPosition(double x, double y, double z) { this.lastReportedX = x; this.lastReportedY = y; this.lastReportedZ = z; }
-    public double getLastReportedX() { return lastReportedX; }
-    public double getLastReportedY() { return lastReportedY; }
-    public double getLastReportedZ() { return lastReportedZ; }
 }
