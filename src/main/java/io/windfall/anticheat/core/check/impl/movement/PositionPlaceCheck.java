@@ -4,67 +4,47 @@ import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="PositionPlace A", stableKey="windfall.movement.positionplace", decay=0.02, setbackVl=20)
+@CheckData(name = "Position Place", stableKey = "windfall.movement.positionplace", decay = 0.01, setbackVl = 15)
 public class PositionPlaceCheck extends Check implements PacketCheck {
 
-    private static final double HARD_LIMIT = 5.3;
-    private static final double SOFT_LIMIT = 5.0;
-    private static final double HARD_INCREMENT = 1.5;
-    private static final double SOFT_INCREMENT = 0.5;
-
-    private final ConcurrentHashMap<UUID, Long> lastFlagTime = new ConcurrentHashMap<>();
+    private static final double MAX_REACH_SQ = 25.0;
+    private static final double TOLERANCE = 0.5;
+    private static final int BUFFER_THRESHOLD = 3;
 
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (!(packet instanceof PlayerInteractBlockC2SPacket)) return;
 
         PlayerInteractBlockC2SPacket p = (PlayerInteractBlockC2SPacket) packet;
+        if (p.getBlockHitResult().getSide() == null) return;
+
         BlockPos blockPos = p.getBlockHitResult().getBlockPos();
-        Direction face = p.getBlockHitResult().getSide();
+        double centerX = blockPos.getX() + 0.5;
+        double centerY = blockPos.getY() + 0.5;
+        double centerZ = blockPos.getZ() + 0.5;
 
-        double blockCenterX = blockPos.getX() + 0.5;
-        double blockCenterY = blockPos.getY() + 0.5;
-        double blockCenterZ = blockPos.getZ() + 0.5;
+        double eyeY = player.getY() + player.getHeight();
 
-        double hitX = blockCenterX + face.getOffsetX() * 0.5;
-        double hitY = blockCenterY + face.getOffsetY() * 0.5;
-        double hitZ = blockCenterZ + face.getOffsetZ() * 0.5;
+        double dx = player.getX() - centerX;
+        double dy = eyeY - centerY;
+        double dz = player.getZ() - centerZ;
+        double distSq = dx * dx + dy * dy + dz * dz;
 
-        double eyeX = player.getX();
-        double eyeY = player.getY() + player.getEyeHeight();
-        double eyeZ = player.getZ();
-
-        double dx = eyeX - hitX;
-        double dy = eyeY - hitY;
-        double dz = eyeZ - hitZ;
-        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        if (distance > HARD_LIMIT) {
-            increaseBuffer(player, HARD_INCREMENT);
-            if (getBuffer(player) > 2.0) {
-                long now = System.currentTimeMillis();
-                Long last = lastFlagTime.get(player.getUuid());
-                if (last == null || now - last > 2000) {
-                    flag(player);
-                    resetBuffer(player);
-                    lastFlagTime.put(player.getUuid(), now);
-                }
+        if (distSq > MAX_REACH_SQ + TOLERANCE) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > BUFFER_THRESHOLD) {
+                flag(player);
+                resetBuffer(player);
             }
-        } else if (distance > SOFT_LIMIT) {
-            increaseBuffer(player, SOFT_INCREMENT);
-            if (getBuffer(player) > 4.0) {
-                long now = System.currentTimeMillis();
-                Long last = lastFlagTime.get(player.getUuid());
-                if (last == null || now - last > 3000) {
-                    flag(player);
-                    resetBuffer(player);
-                    lastFlagTime.put(player.getUuid(), now);
-                }
+        } else if (distSq > MAX_REACH_SQ) {
+            increaseBuffer(player, 0.3);
+            if (getBuffer(player) > 5.0) {
+                flag(player);
+                resetBuffer(player);
             }
         } else {
             decreaseBuffer(player, 0.1);
@@ -73,10 +53,5 @@ public class PositionPlaceCheck extends Check implements PacketCheck {
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        lastFlagTime.remove(uuid);
     }
 }

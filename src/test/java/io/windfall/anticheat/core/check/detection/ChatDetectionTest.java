@@ -75,7 +75,7 @@ class ChatDetectionTest extends CheckTestBase {
     void removePlayer_clearsState() throws Exception {
         check.onPacketReceive(player, createChatPacket("hello"));
         UUID uuid = player.getUuid();
-        Field stateField = ChatCheck.class.getDeclaredField("playerStates");
+        Field stateField = ChatCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

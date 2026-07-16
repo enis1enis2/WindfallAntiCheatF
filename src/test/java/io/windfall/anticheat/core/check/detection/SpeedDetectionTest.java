@@ -17,17 +17,16 @@ class SpeedDetectionTest extends CheckTestBase {
     private SpeedCheck createCheck() { return new SpeedCheck(); }
 
     private Object getOrCreateState(SpeedCheck check, UUID uuid) throws Exception {
-        Field stateField = SpeedCheck.class.getDeclaredField("playerStates");
+        Field stateField = SpeedCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, Object> states = (Map<String, Object>) stateField.get(check);
-        String key = uuid.toString();
-        if (states.containsKey(key)) return states.get(key);
+        Map<UUID, Object> states = (Map<UUID, Object>) stateField.get(check);
+        if (states.containsKey(uuid)) return states.get(uuid);
         Class<?> stateClass = Class.forName("io.windfall.anticheat.core.check.impl.movement.SpeedCheck$PlayerState");
         java.lang.reflect.Constructor<?> ctor = stateClass.getDeclaredConstructor();
         ctor.setAccessible(true);
         Object state = ctor.newInstance();
-        states.put(key, state);
+        states.put(uuid, state);
         return state;
     }
 
@@ -42,7 +41,7 @@ class SpeedDetectionTest extends CheckTestBase {
     @Test
     void stateMap_isConcurrentHashMap() throws Exception {
         SpeedCheck check = createCheck();
-        Field field = SpeedCheck.class.getDeclaredField("playerStates");
+        Field field = SpeedCheck.class.getDeclaredField("stateMap");
         field.setAccessible(true);
         Object stateMap = field.get(check);
         assertInstanceOf(ConcurrentHashMap.class, stateMap);
@@ -73,10 +72,10 @@ class SpeedDetectionTest extends CheckTestBase {
         getOrCreateState(check, playerA.getUuid());
         getOrCreateState(check, playerB.getUuid());
 
-        Field stateField = SpeedCheck.class.getDeclaredField("playerStates");
+        Field stateField = SpeedCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, ?> states = (Map<String, ?>) stateField.get(check);
+        Map<UUID, ?> states = (Map<UUID, ?>) stateField.get(check);
         assertEquals(2, states.size());
     }
 

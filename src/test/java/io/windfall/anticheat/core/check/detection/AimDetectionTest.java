@@ -43,18 +43,28 @@ class AimDetectionTest extends CheckTestBase {
     @Test
     void instantSnap_flags() throws Exception {
         player.setPosition(0, 64, 0);
+        player.setPitch(0);
         player.setYaw(0);
 
         player.setPosition(0.1, 64, 0);
-        check.onPacketReceive(player, createMovePacket(0.1, 64, 0, true));
+        player.setPitch(91.0f);
+        check.onPacketReceive(player, createFullMovePacket(0.1, 64, 0, 0.0f, 91.0f, true));
 
         player.setPosition(0.2, 64, 0);
-        player.setYaw(100.0f);
-        check.onPacketReceive(player, createMovePacket(0.2, 64, 0, true));
+        player.setPitch(0.0f);
+        check.onPacketReceive(player, createFullMovePacket(0.2, 64, 0, 0.0f, 0.0f, true));
 
         player.setPosition(0.3, 64, 0);
-        player.setYaw(200.0f);
-        check.onPacketReceive(player, createMovePacket(0.3, 64, 0, true));
+        player.setPitch(91.0f);
+        check.onPacketReceive(player, createFullMovePacket(0.3, 64, 0, 0.0f, 91.0f, true));
+
+        player.setPosition(0.4, 64, 0);
+        player.setPitch(0.0f);
+        check.onPacketReceive(player, createFullMovePacket(0.4, 64, 0, 0.0f, 0.0f, true));
+
+        player.setPosition(0.5, 64, 0);
+        player.setPitch(91.0f);
+        check.onPacketReceive(player, createFullMovePacket(0.5, 64, 0, 0.0f, 91.0f, true));
 
         assertTrue(check.getBuffer(player) > 0.0 || check.getViolationLevel(player) > 0);
     }

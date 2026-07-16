@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,32 +16,32 @@ class MultiBreakDetectionTest extends CheckTestBase {
 
     private MultiBreakCheck createCheck() { return new MultiBreakCheck(); }
 
-    private Object getOrCreateState(MultiBreakCheck check, String uuidStr) throws Exception {
-        Field stateField = MultiBreakCheck.class.getDeclaredField("playerStates");
+    private Object getOrCreateState(MultiBreakCheck check, UUID uuid) throws Exception {
+        Field stateField = MultiBreakCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, Object> states = (Map<String, Object>) stateField.get(check);
-        if (states.containsKey(uuidStr)) return states.get(uuidStr);
+        Map<UUID, Object> states = (Map<UUID, Object>) stateField.get(check);
+        if (states.containsKey(uuid)) return states.get(uuid);
         Class<?> stateClass = Class.forName("io.windfall.anticheat.core.check.impl.movement.MultiBreakCheck$PlayerState");
         java.lang.reflect.Constructor<?> ctor = stateClass.getDeclaredConstructor();
         ctor.setAccessible(true);
         Object state = ctor.newInstance();
-        states.put(uuidStr, state);
+        states.put(uuid, state);
         return state;
     }
 
     @Test
     void constructor_readCheckData() {
         MultiBreakCheck check = createCheck();
-        assertEquals("MultiBreak A", check.getName());
+        assertEquals("Multi Break", check.getName());
         assertEquals("windfall.movement.multibreak", check.getStableKey());
-        assertEquals(20, check.getSetbackVl());
+        assertEquals(10, check.getSetbackVl());
     }
 
     @Test
     void stateMap_isConcurrentHashMap() throws Exception {
         MultiBreakCheck check = createCheck();
-        Field field = MultiBreakCheck.class.getDeclaredField("playerStates");
+        Field field = MultiBreakCheck.class.getDeclaredField("stateMap");
         field.setAccessible(true);
         Object stateMap = field.get(check);
         assertInstanceOf(ConcurrentHashMap.class, stateMap);
@@ -52,8 +53,8 @@ class MultiBreakDetectionTest extends CheckTestBase {
         WindfallPlayer playerA = createMockPlayer("Alice");
         WindfallPlayer playerB = createMockPlayer("Bob");
 
-        Object stateA = getOrCreateState(check, playerA.getUuid().toString());
-        Object stateB = getOrCreateState(check, playerB.getUuid().toString());
+        Object stateA = getOrCreateState(check, playerA.getUuid());
+        Object stateB = getOrCreateState(check, playerB.getUuid());
 
         Field breaksField = stateA.getClass().getDeclaredField("breaksThisTick");
         breaksField.setAccessible(true);
@@ -68,13 +69,13 @@ class MultiBreakDetectionTest extends CheckTestBase {
         WindfallPlayer playerA = createMockPlayer("Alice");
         WindfallPlayer playerB = createMockPlayer("Bob");
 
-        getOrCreateState(check, playerA.getUuid().toString());
-        getOrCreateState(check, playerB.getUuid().toString());
+        getOrCreateState(check, playerA.getUuid());
+        getOrCreateState(check, playerB.getUuid());
 
-        Field stateField = MultiBreakCheck.class.getDeclaredField("playerStates");
+        Field stateField = MultiBreakCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, ?> states = (Map<String, ?>) stateField.get(check);
+        Map<UUID, ?> states = (Map<UUID, ?>) stateField.get(check);
         assertEquals(2, states.size());
     }
 

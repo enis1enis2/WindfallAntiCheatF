@@ -8,15 +8,10 @@ import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-@CheckData(name="AirLiquidBreak A", stableKey="windfall.movement.airliquidbreak", decay=0.02, setbackVl=20)
+@CheckData(name = "Air Liquid Break", stableKey = "windfall.movement.airliquidbreak", decay = 0.02, setbackVl = 10)
 public class AirLiquidBreakCheck extends Check implements PacketCheck {
 
-    private static final long FLAG_COOLDOWN_MS = 1000;
-
-    private final ConcurrentHashMap<UUID, Long> lastFlagTime = new ConcurrentHashMap<>();
+    private static final int BUFFER_THRESHOLD = 3;
 
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
@@ -25,8 +20,6 @@ public class AirLiquidBreakCheck extends Check implements PacketCheck {
         PlayerActionC2SPacket action = (PlayerActionC2SPacket) packet;
         if (action.getAction() != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) return;
 
-        BlockPos blockPos = action.getPos();
-
         ServerWorld world;
         try {
             world = (ServerWorld) player.getServerPlayer().getWorld();
@@ -34,46 +27,33 @@ public class AirLiquidBreakCheck extends Check implements PacketCheck {
             return;
         }
 
-        BlockState blockState = world.getBlockState(blockPos);
-        FluidState fluidState = blockState.getFluidState();
+        BlockPos feetPos = new BlockPos(
+            (int) Math.floor(player.getX()),
+            (int) Math.floor(player.getY()),
+            (int) Math.floor(player.getZ()));
 
-        boolean isAir = blockState.isAir();
-        boolean isWater = fluidState.isOf(net.minecraft.fluid.Fluids.WATER);
-        boolean isLava = fluidState.isOf(net.minecraft.fluid.Fluids.LAVA);
+        BlockState feetState = world.getBlockState(feetPos);
+        FluidState feetFluid = feetState.getFluidState();
 
-        if (isAir) {
-            long now = System.currentTimeMillis();
-            Long last = lastFlagTime.get(player.getUuid());
-            if (last == null || now - last > FLAG_COOLDOWN_MS) {
-                increaseBuffer(player, 1.5);
-                if (getBuffer(player) > 2.0) {
-                    flag(player);
-                    resetBuffer(player);
-                    lastFlagTime.put(player.getUuid(), now);
-                }
-            }
-        } else if (isWater || isLava) {
-            long now = System.currentTimeMillis();
-            Long last = lastFlagTime.get(player.getUuid());
-            if (last == null || now - last > FLAG_COOLDOWN_MS) {
-                increaseBuffer(player, 1.0);
-                if (getBuffer(player) > 2.5) {
-                    flag(player);
-                    resetBuffer(player);
-                    lastFlagTime.put(player.getUuid(), now);
-                }
+        boolean inLiquid = feetFluid.isOf(net.minecraft.fluid.Fluids.WATER)
+                || feetFluid.isOf(net.minecraft.fluid.Fluids.LAVA);
+
+        boolean inAir = feetState.isAir() && !inLiquid;
+
+        boolean falling = player.getDeltaY() < -0.5;
+
+        if (inLiquid || (inAir && falling)) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > BUFFER_THRESHOLD) {
+                flag(player);
+                resetBuffer(player);
             }
         } else {
-            decreaseBuffer(player, 0.1);
+            decreaseBuffer(player, 0.5);
         }
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        lastFlagTime.remove(uuid);
     }
 }

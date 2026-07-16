@@ -3,27 +3,30 @@ package io.windfall.anticheat.core.check.impl.movement;
 import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.util.math.BlockPos;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="MultiBreak A", stableKey="windfall.movement.multibreak", decay=0.02, setbackVl=20)
+@CheckData(name = "Multi Break", stableKey = "windfall.movement.multibreak", decay = 0.02, setbackVl = 10)
 public class MultiBreakCheck extends Check implements PacketCheck {
 
-    private static final int MAX_BREAKS_PER_TICK = 3;
-    private static final long TICK_WINDOW_MS = 50;
-    private static final int MAX_CONSECUTIVE_NO_MOVE = 5;
+    private static final int MAX_BREAKS_PER_TICK = 1;
+    private static final int BUFFER_THRESHOLD = 2;
 
-    private final ConcurrentHashMap<String, PlayerState> playerStates = new ConcurrentHashMap<>();
-
-    static final class PlayerState {
+    private static final class PlayerState {
         int breaksThisTick;
-        long lastBreakTimestamp;
-        long currentTickStart;
-        int consecutiveNoMove;
-        boolean movedSinceLastBreak;
+        long lastTick;
+    }
 
-        PlayerState() {}
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
+    private PlayerState getState(WindfallPlayer player) {
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
@@ -33,47 +36,26 @@ public class MultiBreakCheck extends Check implements PacketCheck {
         PlayerActionC2SPacket action = (PlayerActionC2SPacket) packet;
         if (action.getAction() != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) return;
 
-        PlayerState state = playerStates.computeIfAbsent(player.getUuid().toString(), k -> new PlayerState());
-        long now = System.currentTimeMillis();
+        PlayerState state = getState(player);
+        long currentTick = player.getTickCount();
 
-        if (now - state.currentTickStart > TICK_WINDOW_MS) {
+        if (currentTick != state.lastTick) {
             state.breaksThisTick = 0;
-            state.currentTickStart = now;
+            state.lastTick = currentTick;
         }
 
         state.breaksThisTick++;
 
         if (state.breaksThisTick > MAX_BREAKS_PER_TICK) {
-            increaseBuffer(player, (state.breaksThisTick - MAX_BREAKS_PER_TICK) * 1.5);
-            if (getBuffer(player) > 2.0) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > BUFFER_THRESHOLD) {
                 flag(player);
                 resetBuffer(player);
             }
         }
-
-        boolean moved = Math.abs(player.getDeltaX()) > 0.01 || Math.abs(player.getDeltaZ()) > 0.01;
-        if (!moved) {
-            state.consecutiveNoMove++;
-            if (state.consecutiveNoMove > MAX_CONSECUTIVE_NO_MOVE) {
-                increaseBuffer(player, 0.5);
-                if (getBuffer(player) > 3.0) {
-                    flag(player);
-                    resetBuffer(player);
-                }
-            }
-        } else {
-            state.consecutiveNoMove = 0;
-        }
-
-        state.lastBreakTimestamp = now;
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid.toString());
     }
 }

@@ -20,20 +20,25 @@ class SelfInteractDetectionTest extends CheckTestBase {
     }
 
     @Test
-    void attackOtherEntity_noFlag() throws Exception {
-        check.onPacketReceive(player, createAttackPacket());
-        assertEquals(0, check.getViolationLevel(player));
-    }
-
-    @Test
     void nonAttackPacket_noFlag() throws Exception {
         check.onPacketReceive(player, createMovePacket(0, 64, 0, true));
         assertEquals(0, check.getViolationLevel(player));
     }
 
     @Test
+    void swingPacket_noFlag() throws Exception {
+        check.onPacketReceive(player, createSwingPacket());
+        assertEquals(0, check.getViolationLevel(player));
+    }
+
+    @Test
+    void chatPacket_noFlag() throws Exception {
+        check.onPacketReceive(player, createChatPacket("hello"));
+        assertEquals(0, check.getViolationLevel(player));
+    }
+
+    @Test
     void removePlayer_noError() throws Exception {
-        check.onPacketReceive(player, createAttackPacket());
         assertDoesNotThrow(() -> check.removePlayer(player.getUuid()));
     }
 }

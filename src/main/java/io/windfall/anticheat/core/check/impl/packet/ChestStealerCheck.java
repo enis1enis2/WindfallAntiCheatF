@@ -2,34 +2,40 @@ package io.windfall.anticheat.core.check.impl.packet;
 
 import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
+import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
+import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
 import net.minecraft.text.Text;
 
-import java.util.Map;
+import java.util.ArrayDeque;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="ChestStealer A", stableKey="windfall.packet.cheststealer", decay=0.02, setbackVl=20)
+@CheckData(name="Chest Stealer A", stableKey="windfall.packet.cheststealer", decay=0.01, setbackVl=15)
 public class ChestStealerCheck extends Check implements PacketCheck {
 
     private static final int MAX_CLICKS_PER_WINDOW = 40;
+    private static final long WINDOW_TIMEOUT_MS = 3000;
     private static final int FAST_CLICK_THRESHOLD = 6;
     private static final long FAST_CLICK_WINDOW_MS = 500;
-    private static final long SHORT_SESSION_THRESHOLD_MS = 3000;
-    private static final int SHORT_SESSION_MIN_CLICKS = 15;
+    private static final int MAX_ITEMS_PER_SECOND = 15;
 
-    private final ConcurrentHashMap<java.util.UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
-
-    private static class PlayerState {
-        int clicksInSession = 0;
-        long windowOpenTime = 0;
-        long lastClickTime = 0;
-        int recentClickCount = 0;
-        long recentClickWindowStart = 0;
-        boolean windowOpen = false;
+    private static final class PlayerState {
+        int clicksThisWindow;
+        long windowOpenTime;
+        boolean windowOpen;
+        final ArrayDeque<Long> clickTimestamps = new ArrayDeque<>();
     }
 
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
     private PlayerState getState(WindfallPlayer player) {
-        return playerStates.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
@@ -39,78 +45,63 @@ public class ChestStealerCheck extends Check implements PacketCheck {
         PlayerState state = getState(player);
 
         if (packet instanceof ClickSlotC2SPacket) {
-            if (!state.windowOpen) return;
-
-            long now = System.currentTimeMillis();
-            state.clicksInSession++;
-            state.lastClickTime = now;
-
-            // Per-window click limit
-            if (state.clicksInSession > MAX_CLICKS_PER_WINDOW) {
-                increaseBuffer(player, 2.0);
-                if (getBuffer(player) > 3.0) {
-                    flag(player);
-                    resetBuffer(player);
-                    kickPlayer(player, "Too many clicks in window session");
-                }
-                return;
-            }
-
-            // Fast-click burst detection
-            if (now - state.recentClickWindowStart > FAST_CLICK_WINDOW_MS) {
-                state.recentClickCount = 0;
-                state.recentClickWindowStart = now;
-            }
-            state.recentClickCount++;
-
-            if (state.recentClickCount > FAST_CLICK_THRESHOLD) {
-                increaseBuffer(player, 1.5);
-                if (getBuffer(player) > 4.0) {
-                    flag(player);
-                    resetBuffer(player);
-                }
-            }
-
-            // Short session detection
-            long sessionDuration = now - state.windowOpenTime;
-            if (sessionDuration < SHORT_SESSION_THRESHOLD_MS && state.clicksInSession >= SHORT_SESSION_MIN_CLICKS) {
-                increaseBuffer(player, 1.0);
-                if (getBuffer(player) > 3.0) {
-                    flag(player);
-                    resetBuffer(player);
-                }
-            }
+            handleClick(player, state);
         } else if (packet instanceof CloseHandledScreenC2SPacket) {
-            // Window closed
-            if (state.windowOpen) {
-                state.windowOpen = false;
-                state.clicksInSession = 0;
-                state.recentClickCount = 0;
-            }
+            handleClose(player, state);
         }
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-        // Detect window open from server
-        if (packet instanceof net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket) {
+        if (packet instanceof OpenScreenS2CPacket) {
             PlayerState state = getState(player);
             state.windowOpen = true;
             state.windowOpenTime = System.currentTimeMillis();
-            state.clicksInSession = 0;
-            state.recentClickCount = 0;
+            state.clicksThisWindow = 0;
         }
     }
 
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid);
+    private void handleClick(WindfallPlayer player, PlayerState state) {
+        if (!state.windowOpen) return;
+
+        long now = System.currentTimeMillis();
+        state.clicksThisWindow++;
+        state.clickTimestamps.addLast(now);
+
+        while (!state.clickTimestamps.isEmpty() && now - state.clickTimestamps.peekFirst() > FAST_CLICK_WINDOW_MS) {
+            state.clickTimestamps.removeFirst();
+        }
+
+        if (state.clicksThisWindow > MAX_CLICKS_PER_WINDOW) {
+            flag(player);
+            return;
+        }
+
+        if (state.clickTimestamps.size() > FAST_CLICK_THRESHOLD) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > 5.0) {
+                flag(player);
+                resetBuffer(player);
+            }
+        } else {
+            decreaseBuffer(player, 0.05);
+        }
     }
 
-    private void kickPlayer(WindfallPlayer player, String reason) {
-        net.minecraft.server.network.ServerPlayerEntity sp = player.getServerPlayer();
-        if (sp != null && sp.networkHandler != null) {
-            sp.networkHandler.disconnect(Text.literal("[Windfall] " + reason));
+    private void handleClose(WindfallPlayer player, PlayerState state) {
+        if (!state.windowOpen) return;
+
+        long now = System.currentTimeMillis();
+        long windowDuration = now - state.windowOpenTime;
+        if (windowDuration < WINDOW_TIMEOUT_MS && state.clicksThisWindow > MAX_ITEMS_PER_SECOND) {
+            increaseBuffer(player, 0.5);
+            if (getBuffer(player) > 3.0) {
+                flag(player);
+                resetBuffer(player);
+            }
         }
+
+        state.windowOpen = false;
+        state.clicksThisWindow = 0;
     }
 }

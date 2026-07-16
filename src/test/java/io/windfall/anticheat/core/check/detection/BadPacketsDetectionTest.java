@@ -102,8 +102,8 @@ class BadPacketsDetectionTest extends CheckTestBase {
 
     @Test
     void duplicatePacketDetection_increasesBuffer() {
-        for (int i = 0; i < 11; i++) {
-            PlayerMoveC2SPacket pkt = createMovePacket(i, 64.0, 0.0, true);
+        for (int i = 0; i < 12; i++) {
+            PlayerMoveC2SPacket pkt = createMovePacket(0.0, 64.0, 0.0, true);
             check.onPacketReceive(player, pkt);
         }
         assertTrue(check.getBuffer(player) > 0.0 || check.getViolationLevel(player) > 0);
@@ -138,7 +138,7 @@ class BadPacketsDetectionTest extends CheckTestBase {
     void removePlayer_clearsState() throws Exception {
         check.onPacketReceive(player, createSwingPacket());
         UUID uuid = player.getUuid();
-        Field stateField = BadPacketsCheck.class.getDeclaredField("playerStates");
+        Field stateField = BadPacketsCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

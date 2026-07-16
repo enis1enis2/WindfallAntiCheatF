@@ -22,13 +22,13 @@ class CheckBaseTest extends CheckTestBase {
         CriticalsCheck check = new CriticalsCheck();
         assertEquals("Criticals A", check.getName());
         assertEquals("windfall.combat.criticals", check.getStableKey());
-        assertEquals(20, check.getSetbackVl());
+        assertEquals(10, check.getSetbackVl());
     }
 
     @Test
     void selfInteractCheck_metadata() {
         SelfInteractCheck check = new SelfInteractCheck();
-        assertEquals("SelfInteract A", check.getName());
+        assertEquals("Self Interact A", check.getName());
         assertEquals("windfall.combat.selfinteract", check.getStableKey());
     }
 
@@ -52,7 +52,7 @@ class CheckBaseTest extends CheckTestBase {
     void inventoryCheck_metadata() {
         InventoryCheck check = new InventoryCheck();
         assertEquals("Inventory A", check.getName());
-        assertEquals("windfall.inventory.move", check.getStableKey());
+        assertEquals("windfall.inventory.inventory", check.getStableKey());
         assertEquals(15, check.getSetbackVl());
     }
 

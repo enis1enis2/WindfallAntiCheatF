@@ -33,20 +33,18 @@ class NoFallDetectionTest extends CheckTestBase {
     }
 
     @Test
-    void fallingAndClaimingGround_buffersIncrease() {
+    void fallingAndClaimingGround_flagsAfterConsecutive() {
         player.setPosition(0, 100, 0);
-        player.setOnGround(false);
+        player.setOnGround(true);
 
-        for (int tick = 0; tick < 5; tick++) {
-            check.onPacketReceive(player, createMovePacket(0, 100 - tick - 1, 0, false));
-            player.setPosition(0, 100 - tick - 1, 0);
+        for (int tick = 0; tick < 6; tick++) {
+            double y = 100 - (tick + 1) * 4;
+            player.setOnGround(true);
+            player.setPosition(0, y, 0);
+            check.onPacketReceive(player, createMovePacket(0, y, 0, true));
         }
 
-        player.setPosition(0, 94, 0);
-        player.setOnGround(true);
-        check.onPacketReceive(player, createMovePacket(0, 94, 0, true));
-
-        assertTrue(check.getBuffer(player) > 0.0);
+        assertTrue(check.getViolationLevel(player) > 0);
     }
 
     @Test
@@ -85,16 +83,17 @@ class NoFallDetectionTest extends CheckTestBase {
     void removePlayer_clearsState() throws Exception {
         player.setPosition(0, 100, 0);
         player.setOnGround(false);
-        check.onPacketReceive(player, createMovePacket(0, 99, 0, false));
+        player.setPosition(0, 96, 0);
+        check.onPacketReceive(player, createMovePacket(0, 96, 0, true));
 
         UUID uuid = player.getUuid();
-        Field stateField = NoFallCheck.class.getDeclaredField("playerStates");
+        Field stateField = NoFallCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);
-        assertTrue(states.containsKey(uuid.toString()));
+        assertTrue(states.containsKey(uuid));
 
         check.removePlayer(uuid);
-        assertFalse(states.containsKey(uuid.toString()));
+        assertFalse(states.containsKey(uuid));
     }
 }

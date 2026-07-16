@@ -50,7 +50,7 @@ class BaritoneDetectionTest extends CheckTestBase {
         check.onPacketReceive(player, createFullMovePacket(0, 64, 0, 0.0f, 0, true));
 
         UUID uuid = player.getUuid();
-        Field stateField = BaritoneCheck.class.getDeclaredField("playerStates");
+        Field stateField = BaritoneCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

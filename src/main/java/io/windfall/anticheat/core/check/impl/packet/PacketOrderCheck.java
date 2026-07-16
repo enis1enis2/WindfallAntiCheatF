@@ -1,87 +1,88 @@
 package io.windfall.anticheat.core.check.impl.packet;
 
+import io.windfall.anticheat.WindfallMod;
 import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.*;
-import net.minecraft.text.Text;
 
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
-@CheckData(name="PacketOrder A", stableKey="windfall.packet.order", decay=0.02, setbackVl=20)
+@CheckData(name="Packet Order A", stableKey="windfall.packet.order", decay=0.01, setbackVl=15,
+    compat={CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier=1.2)
 public class PacketOrderCheck extends Check implements PacketCheck {
 
-    private final ConcurrentHashMap<java.util.UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
+    private static final int MAX_MOVEMENT_BEFORE_LOGIN = 0;
+    private static final int DUPLICATE_PACKET_THRESHOLD = 5;
+    private static final long PACKET_BURST_WINDOW_MS = 100;
+    private static final int MAX_PACKETS_IN_BURST = 15;
 
-    private static class PlayerState {
-        boolean lastWasMovement = false;
-        boolean lastWasAttack = false;
-        boolean lastWasPlace = false;
-        boolean lastWasClick = false;
-        boolean movedSinceLastAttack = false;
-        boolean clickedSinceLastPlace = false;
-        int sequenceId = 0;
+    private static final class PlayerState {
+        boolean loginComplete;
+        int movementCountBeforeLogin;
+        int duplicatePacketCount;
+        long lastPacketHash;
+        final ConcurrentLinkedDeque<Long> packetBurst = new ConcurrentLinkedDeque<>();
     }
 
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
     private PlayerState getState(WindfallPlayer player) {
-        return playerStates.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (!enabled) return;
 
+        long now = System.currentTimeMillis();
         PlayerState state = getState(player);
 
-        // Track movement packets
-        if (packet instanceof PlayerMoveC2SPacket) {
-            state.lastWasMovement = true;
-            state.movedSinceLastAttack = true;
-            state.lastWasAttack = false;
-            return;
+        // Burst detection
+        state.packetBurst.addLast(now);
+        while (!state.packetBurst.isEmpty() && now - state.packetBurst.peekFirst() > PACKET_BURST_WINDOW_MS) {
+            state.packetBurst.removeFirst();
+        }
+        if (state.packetBurst.size() > MAX_PACKETS_IN_BURST) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > 3.0) {
+                flag(player);
+                resetBuffer(player);
+            }
         }
 
-        // Attack must come after movement (not before)
-        if (packet instanceof HandSwingC2SPacket || packet instanceof net.minecraft.network.packet.c2s.play.UpdateSelectedSlotC2SPacket) {
-            if (state.lastWasAttack && !state.movedSinceLastAttack) {
-                increaseBuffer(player, 1.0);
-                if (getBuffer(player) > 3.0) {
-                    flag(player);
-                    resetBuffer(player);
+        // Consecutive duplicate detection
+        long currentHash = packet.getClass().getName().hashCode();
+        if (currentHash == state.lastPacketHash && isMovementPacket(packet)) {
+            state.duplicatePacketCount++;
+            if (state.duplicatePacketCount > DUPLICATE_PACKET_THRESHOLD) {
+                flag(player);
+                state.duplicatePacketCount = 0;
+            }
+        } else {
+            state.duplicatePacketCount = 0;
+        }
+        state.lastPacketHash = currentHash;
+
+        // Pre-login movement detection
+        if (!state.loginComplete) {
+            if (isMovementPacket(packet)) {
+                state.movementCountBeforeLogin++;
+            }
+            if (packet instanceof PlayerMoveC2SPacket move) {
+                if (move.changesPosition()) {
+                    state.loginComplete = true;
+                    if (state.movementCountBeforeLogin > MAX_MOVEMENT_BEFORE_LOGIN) {
+                        flag(player);
+                    }
                 }
             }
-            state.lastWasAttack = true;
-            state.movedSinceLastAttack = false;
-            state.lastWasMovement = false;
-            return;
-        }
-
-        // Place must come after corresponding click
-        if (packet instanceof PlayerInteractBlockC2SPacket) {
-            if (state.lastWasPlace && !state.clickedSinceLastPlace) {
-                increaseBuffer(player, 1.0);
-                if (getBuffer(player) > 3.0) {
-                    flag(player);
-                    resetBuffer(player);
-                }
-            }
-            state.lastWasPlace = true;
-            state.clickedSinceLastPlace = false;
-            return;
-        }
-
-        // Click window tracking
-        if (packet instanceof ClickSlotC2SPacket) {
-            state.clickedSinceLastPlace = true;
-            state.lastWasClick = true;
-            return;
-        }
-
-        // Client command resets movement tracking
-        if (packet instanceof ClientCommandC2SPacket) {
-            state.lastWasMovement = false;
-            state.lastWasAttack = false;
-            return;
         }
     }
 
@@ -89,15 +90,11 @@ public class PacketOrderCheck extends Check implements PacketCheck {
     public void onPacketSend(WindfallPlayer player, Object packet) {
     }
 
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid);
+    public void onLoginComplete(WindfallPlayer player) {
+        getState(player).loginComplete = true;
     }
 
-    private void kickPlayer(WindfallPlayer player, String reason) {
-        net.minecraft.server.network.ServerPlayerEntity sp = player.getServerPlayer();
-        if (sp != null && sp.networkHandler != null) {
-            sp.networkHandler.disconnect(Text.literal("[Windfall] " + reason));
-        }
+    private boolean isMovementPacket(Object packet) {
+        return packet instanceof PlayerMoveC2SPacket || packet instanceof HandSwingC2SPacket;
     }
 }

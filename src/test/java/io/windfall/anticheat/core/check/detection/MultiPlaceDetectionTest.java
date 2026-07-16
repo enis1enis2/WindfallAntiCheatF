@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,32 +16,32 @@ class MultiPlaceDetectionTest extends CheckTestBase {
 
     private MultiPlaceCheck createCheck() { return new MultiPlaceCheck(); }
 
-    private Object getOrCreateState(MultiPlaceCheck check, String uuidStr) throws Exception {
-        Field stateField = MultiPlaceCheck.class.getDeclaredField("playerStates");
+    private Object getOrCreateState(MultiPlaceCheck check, UUID uuid) throws Exception {
+        Field stateField = MultiPlaceCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, Object> states = (Map<String, Object>) stateField.get(check);
-        if (states.containsKey(uuidStr)) return states.get(uuidStr);
+        Map<UUID, Object> states = (Map<UUID, Object>) stateField.get(check);
+        if (states.containsKey(uuid)) return states.get(uuid);
         Class<?> stateClass = Class.forName("io.windfall.anticheat.core.check.impl.movement.MultiPlaceCheck$PlayerState");
         java.lang.reflect.Constructor<?> ctor = stateClass.getDeclaredConstructor();
         ctor.setAccessible(true);
         Object state = ctor.newInstance();
-        states.put(uuidStr, state);
+        states.put(uuid, state);
         return state;
     }
 
     @Test
     void constructor_readCheckData() {
         MultiPlaceCheck check = createCheck();
-        assertEquals("MultiPlace A", check.getName());
+        assertEquals("Multi Place", check.getName());
         assertEquals("windfall.movement.multiplace", check.getStableKey());
-        assertEquals(20, check.getSetbackVl());
+        assertEquals(10, check.getSetbackVl());
     }
 
     @Test
     void stateMap_isConcurrentHashMap() throws Exception {
         MultiPlaceCheck check = createCheck();
-        Field field = MultiPlaceCheck.class.getDeclaredField("playerStates");
+        Field field = MultiPlaceCheck.class.getDeclaredField("stateMap");
         field.setAccessible(true);
         Object stateMap = field.get(check);
         assertInstanceOf(ConcurrentHashMap.class, stateMap);
@@ -52,8 +53,8 @@ class MultiPlaceDetectionTest extends CheckTestBase {
         WindfallPlayer playerA = createMockPlayer("Alice");
         WindfallPlayer playerB = createMockPlayer("Bob");
 
-        Object stateA = getOrCreateState(check, playerA.getUuid().toString());
-        Object stateB = getOrCreateState(check, playerB.getUuid().toString());
+        Object stateA = getOrCreateState(check, playerA.getUuid());
+        Object stateB = getOrCreateState(check, playerB.getUuid());
 
         Field placesField = stateA.getClass().getDeclaredField("placesThisTick");
         placesField.setAccessible(true);
@@ -68,13 +69,13 @@ class MultiPlaceDetectionTest extends CheckTestBase {
         WindfallPlayer playerA = createMockPlayer("Alice");
         WindfallPlayer playerB = createMockPlayer("Bob");
 
-        getOrCreateState(check, playerA.getUuid().toString());
-        getOrCreateState(check, playerB.getUuid().toString());
+        getOrCreateState(check, playerA.getUuid());
+        getOrCreateState(check, playerB.getUuid());
 
-        Field stateField = MultiPlaceCheck.class.getDeclaredField("playerStates");
+        Field stateField = MultiPlaceCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, ?> states = (Map<String, ?>) stateField.get(check);
+        Map<UUID, ?> states = (Map<UUID, ?>) stateField.get(check);
         assertEquals(2, states.size());
     }
 

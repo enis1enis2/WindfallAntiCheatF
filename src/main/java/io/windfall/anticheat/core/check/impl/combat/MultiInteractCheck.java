@@ -1,26 +1,34 @@
 package io.windfall.anticheat.core.check.impl.combat;
 
 import io.windfall.anticheat.core.check.*;
+import io.windfall.anticheat.core.check.PacketCheck;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="MultiInteract A", stableKey="windfall.combat.multiinteract", decay=0.02, setbackVl=20)
+@CheckData(name = "Multi Interact A", stableKey = "windfall.combat.multiinteract", decay = 0.01, setbackVl = 15)
 public class MultiInteractCheck extends Check implements PacketCheck {
 
-    private static final long TICK_WINDOW_MS = 55;
-    private static final int MULTI_HIT_THRESHOLD = 2;
+    private static final int MAX_ENTITIES_PER_TICK = 2;
+    private static final long TICK_WINDOW_MS = 60;
 
-    private final ConcurrentHashMap<UUID, InteractState> stateMap = new ConcurrentHashMap<>();
-
-    private static class InteractState {
-        final Set<Integer> tickEntityIds = new HashSet<>();
-        long tickWindowStart;
-        long lastInteractTime;
+    private static final class PlayerState {
+        final Set<Integer> entitiesThisTick = new HashSet<>();
+        long lastAttackTime;
+        int consecutiveViolations;
     }
 
-    private InteractState getState(UUID uuid) {
-        return stateMap.computeIfAbsent(uuid, k -> new InteractState());
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
+    private PlayerState getState(UUID uuid) {
+        return stateMap.computeIfAbsent(uuid, k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
@@ -38,44 +46,43 @@ public class MultiInteractCheck extends Check implements PacketCheck {
                     if (e != null) targetEntityId[0] = e.getId();
                 } catch (Exception ignored) {}
             }
-            public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d location) {
-                isAttack[0] = true;
-                try {
-                    net.minecraft.entity.Entity e = p.getEntity(player.getServerPlayer().getServerWorld());
-                    if (e != null) targetEntityId[0] = e.getId();
-                } catch (Exception ignored) {}
-            }
+            public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d location) {}
         });
-        if (!isAttack[0] || targetEntityId[0] == -1) return;
+        if (!isAttack[0]) return;
 
-        InteractState state = getState(player.getUuid());
+        PlayerState state = getState(player.getUuid());
         long now = System.currentTimeMillis();
 
-        if (now - state.tickWindowStart > TICK_WINDOW_MS) {
-            state.tickEntityIds.clear();
-            state.tickWindowStart = now;
+        if (now - state.lastAttackTime > TICK_WINDOW_MS) {
+            state.entitiesThisTick.clear();
+        }
+        state.lastAttackTime = now;
+
+        int targetId;
+        try {
+            net.minecraft.entity.Entity e = p.getEntity(player.getServerPlayer().getServerWorld());
+            targetId = e != null ? e.getId() : -1;
+        } catch (Exception e) {
+            targetId = -1;
         }
 
-        state.tickEntityIds.add(targetEntityId[0]);
+        if (targetId == -1) return;
 
-        if (state.tickEntityIds.size() >= MULTI_HIT_THRESHOLD) {
-            increaseBuffer(player, 1.0);
-            if (getBuffer(player) > 2.0) { flag(player); resetBuffer(player); }
+        state.entitiesThisTick.add(targetId);
+
+        if (state.entitiesThisTick.size() > MAX_ENTITIES_PER_TICK) {
+            state.consecutiveViolations++;
+            if (state.consecutiveViolations >= 3) {
+                flag(player);
+                state.consecutiveViolations = 0;
+            }
+            resetBuffer(player);
+        } else {
+            state.consecutiveViolations = Math.max(0, state.consecutiveViolations - 1);
         }
-
-        if (now - state.lastInteractTime < 5) {
-            increaseBuffer(player, 0.3);
-            if (getBuffer(player) > 2.0) { flag(player); resetBuffer(player); }
-        }
-
-        state.lastInteractTime = now;
     }
 
     @Override
-    public void onPacketSend(WindfallPlayer player, Object packet) {}
-
-    @Override
-    public void removePlayer(UUID uuid) {
-        stateMap.remove(uuid);
+    public void onPacketSend(WindfallPlayer player, Object packet) {
     }
 }

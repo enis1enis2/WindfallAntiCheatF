@@ -38,7 +38,7 @@ class AutoclickerDetectionTest extends CheckTestBase {
         check.onPacketReceive(player, createAttackPacket());
 
         UUID uuid = player.getUuid();
-        Field stateField = AutoclickerCheck.class.getDeclaredField("clickStates");
+        Field stateField = AutoclickerCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

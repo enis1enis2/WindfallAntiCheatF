@@ -17,24 +17,23 @@ class GroundSpoofDetectionTest extends CheckTestBase {
     private GroundSpoofCheck createCheck() { return new GroundSpoofCheck(); }
 
     private Object getOrCreateState(GroundSpoofCheck check, UUID uuid) throws Exception {
-        Field stateField = GroundSpoofCheck.class.getDeclaredField("playerStates");
+        Field stateField = GroundSpoofCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, Object> states = (Map<String, Object>) stateField.get(check);
-        String key = uuid.toString();
-        if (states.containsKey(key)) return states.get(key);
+        Map<UUID, Object> states = (Map<UUID, Object>) stateField.get(check);
+        if (states.containsKey(uuid)) return states.get(uuid);
         Class<?> stateClass = Class.forName("io.windfall.anticheat.core.check.impl.movement.GroundSpoofCheck$PlayerState");
         java.lang.reflect.Constructor<?> ctor = stateClass.getDeclaredConstructor();
         ctor.setAccessible(true);
         Object state = ctor.newInstance();
-        states.put(key, state);
+        states.put(uuid, state);
         return state;
     }
 
     @Test
     void constructor_readCheckData() {
         GroundSpoofCheck check = createCheck();
-        assertEquals("GroundSpoof A", check.getName());
+        assertEquals("Ground Spoof A", check.getName());
         assertEquals("windfall.movement.groundspoof", check.getStableKey());
         assertEquals(20, check.getSetbackVl());
     }
@@ -42,14 +41,14 @@ class GroundSpoofDetectionTest extends CheckTestBase {
     @Test
     void stateMap_isConcurrentHashMap() throws Exception {
         GroundSpoofCheck check = createCheck();
-        Field field = GroundSpoofCheck.class.getDeclaredField("playerStates");
+        Field field = GroundSpoofCheck.class.getDeclaredField("stateMap");
         field.setAccessible(true);
         Object stateMap = field.get(check);
         assertInstanceOf(ConcurrentHashMap.class, stateMap);
     }
 
     @Test
-    void perPlayerState_spoofCountIsPerPlayer() throws Exception {
+    void perPlayerState_falseGroundCountIsPerPlayer() throws Exception {
         GroundSpoofCheck check = createCheck();
         WindfallPlayer playerA = createMockPlayer("Alice");
         WindfallPlayer playerB = createMockPlayer("Bob");
@@ -57,7 +56,7 @@ class GroundSpoofDetectionTest extends CheckTestBase {
         Object stateA = getOrCreateState(check, playerA.getUuid());
         Object stateB = getOrCreateState(check, playerB.getUuid());
 
-        Field spoofField = stateA.getClass().getDeclaredField("spoofCount");
+        Field spoofField = stateA.getClass().getDeclaredField("falseGroundCount");
         spoofField.setAccessible(true);
         spoofField.setInt(stateA, 10);
 
@@ -73,10 +72,10 @@ class GroundSpoofDetectionTest extends CheckTestBase {
         getOrCreateState(check, playerA.getUuid());
         getOrCreateState(check, playerB.getUuid());
 
-        Field stateField = GroundSpoofCheck.class.getDeclaredField("playerStates");
+        Field stateField = GroundSpoofCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
-        Map<String, ?> states = (Map<String, ?>) stateField.get(check);
+        Map<UUID, ?> states = (Map<UUID, ?>) stateField.get(check);
         assertEquals(2, states.size());
     }
 

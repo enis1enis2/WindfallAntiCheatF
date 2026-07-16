@@ -72,7 +72,7 @@ class CriticalsDetectionTest extends CheckTestBase {
             player.setPosition(0, 100, 0);
             check.onPacketReceive(player, createAttackPacket());
         }
-        assertTrue(check.getBuffer(player) > 0.0);
+        assertTrue(check.getViolationLevel(player) > 0);
     }
 
     @Test

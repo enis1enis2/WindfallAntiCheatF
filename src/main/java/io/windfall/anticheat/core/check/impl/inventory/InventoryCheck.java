@@ -10,7 +10,7 @@ import net.minecraft.world.GameMode;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="Inventory A", stableKey="windfall.inventory.move", decay=0.02, setbackVl=15,
+@CheckData(name="Inventory A", stableKey="windfall.inventory.inventory", decay=0.02, setbackVl=15,
     compat = {CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier = 1.3)
 public class InventoryCheck extends Check implements PacketCheck {
 

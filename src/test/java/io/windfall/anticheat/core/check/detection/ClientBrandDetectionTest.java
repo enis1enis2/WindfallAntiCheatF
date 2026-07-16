@@ -23,7 +23,7 @@ class ClientBrandDetectionTest extends CheckTestBase {
 
     @Test
     void checkName_isCorrect() {
-        assertEquals("ClientBrand A", check.getName());
+        assertEquals("Client Brand A", check.getName());
     }
 
     @Test

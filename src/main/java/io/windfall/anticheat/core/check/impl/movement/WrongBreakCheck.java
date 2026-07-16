@@ -2,28 +2,32 @@ package io.windfall.anticheat.core.check.impl.movement;
 
 import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import net.minecraft.block.BlockState;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="WrongBreak A", stableKey="windfall.movement.wrongbreak", decay=0.02, setbackVl=20)
+@CheckData(name = "Wrong Break", stableKey = "windfall.movement.wrongbreak", decay = 0.02, setbackVl = 10)
 public class WrongBreakCheck extends Check implements PacketCheck {
 
-    private static final long FLAG_COOLDOWN_MS = 1000;
+    private static final double MAX_Y_DEVIATION = 2.0;
+    private static final int BUFFER_THRESHOLD = 3;
 
-    private final ConcurrentHashMap<String, PlayerState> playerStates = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<UUID, Long> lastFlagTime = new ConcurrentHashMap<>();
+    private static final class PlayerState {
+        double lastBreakX, lastBreakY, lastBreakZ;
+        boolean hasLastBreak;
+    }
 
-    static final class PlayerState {
-        BlockPos startBlockPos;
-        BlockState startBlockState;
-        long startTimestamp;
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
 
-        PlayerState() {}
+    private PlayerState getState(WindfallPlayer player) {
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
@@ -31,89 +35,48 @@ public class WrongBreakCheck extends Check implements PacketCheck {
         if (!(packet instanceof PlayerActionC2SPacket)) return;
 
         PlayerActionC2SPacket action = (PlayerActionC2SPacket) packet;
-        PlayerActionC2SPacket.Action actionType = action.getAction();
-        PlayerState state = playerStates.computeIfAbsent(player.getUuid().toString(), k -> new PlayerState());
+        if (action.getAction() != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) return;
 
-        if (actionType == PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) {
-            BlockPos blockPos = action.getPos();
+        PlayerState state = getState(player);
+        BlockPos blockPos = action.getPos();
 
-            ServerWorld world;
-            try {
-                world = (ServerWorld) player.getServerPlayer().getWorld();
-            } catch (Exception e) {
-                return;
+        int blockX = blockPos.getX();
+        int blockY = blockPos.getY();
+        int blockZ = blockPos.getZ();
+
+        double yDeviation = Math.abs(player.getY() - blockY);
+
+        if (yDeviation > MAX_Y_DEVIATION) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > BUFFER_THRESHOLD) {
+                flag(player);
+                resetBuffer(player);
             }
-
-            state.startBlockPos = blockPos;
-            state.startBlockState = world.getBlockState(blockPos);
-            state.startTimestamp = System.currentTimeMillis();
-
-        } else if (actionType == PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK) {
-            if (state.startBlockPos == null || state.startBlockState == null) return;
-
-            long elapsed = System.currentTimeMillis() - state.startTimestamp;
-            if (elapsed > 5000) {
-                state.startBlockPos = null;
-                state.startBlockState = null;
-                return;
-            }
-
-            BlockPos stopPos = action.getPos();
-
-            if (!stopPos.equals(state.startBlockPos)) {
-                long now = System.currentTimeMillis();
-                Long last = lastFlagTime.get(player.getUuid());
-                if (last == null || now - last > FLAG_COOLDOWN_MS) {
-                    increaseBuffer(player, 2.0);
-                    if (getBuffer(player) > 2.0) {
-                        flag(player);
-                        resetBuffer(player);
-                        lastFlagTime.put(player.getUuid(), now);
-                    }
-                }
-                state.startBlockPos = null;
-                state.startBlockState = null;
-                return;
-            }
-
-            ServerWorld world;
-            try {
-                world = (ServerWorld) player.getServerPlayer().getWorld();
-            } catch (Exception e) {
-                return;
-            }
-
-            BlockState currentBlockState = world.getBlockState(stopPos);
-            if (!currentBlockState.equals(state.startBlockState)) {
-                long now = System.currentTimeMillis();
-                Long last = lastFlagTime.get(player.getUuid());
-                if (last == null || now - last > FLAG_COOLDOWN_MS) {
-                    increaseBuffer(player, 1.5);
-                    if (getBuffer(player) > 2.0) {
-                        flag(player);
-                        resetBuffer(player);
-                        lastFlagTime.put(player.getUuid(), now);
-                    }
-                }
-            } else {
-                decreaseBuffer(player, 0.1);
-            }
-
-            state.startBlockPos = null;
-            state.startBlockState = null;
-        } else if (actionType == PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK) {
-            state.startBlockPos = null;
-            state.startBlockState = null;
+        } else {
+            decreaseBuffer(player, 0.5);
         }
+
+        if (state.hasLastBreak) {
+            double dx = blockX - state.lastBreakX;
+            double dz = blockZ - state.lastBreakZ;
+            double dist = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist > 10.0) {
+                increaseBuffer(player, 2.0);
+                if (getBuffer(player) > BUFFER_THRESHOLD) {
+                    flag(player);
+                    resetBuffer(player);
+                }
+            }
+        }
+
+        state.lastBreakX = blockX;
+        state.lastBreakY = blockY;
+        state.lastBreakZ = blockZ;
+        state.hasLastBreak = true;
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid.toString());
-        lastFlagTime.remove(uuid);
     }
 }

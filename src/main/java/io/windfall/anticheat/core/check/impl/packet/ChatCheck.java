@@ -6,28 +6,26 @@ import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.text.Text;
 
 import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="Chat A", stableKey="windfall.packet.chat", decay=0.02, setbackVl=20)
+@CheckData(name="Chat A", stableKey="windfall.packet.chat", decay=0.01, setbackVl=15,
+    compat={CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier=1.2)
 public class ChatCheck extends Check implements PacketCheck {
 
-    private static final int MAX_MESSAGES_PER_MINUTE = 60;
-    private static final int MAX_BURST_MESSAGES = 4;
-    private static final long BURST_WINDOW_MS = 2000;
-    private static final long MINUTE_WINDOW_MS = 60000;
+    private static final int MAX_CHAT_PER_MINUTE = 60;
+    private static final int MAX_CHAT_BURST = 4;
+    private static final long CHAT_BURST_WINDOW_MS = 2000;
 
-    private final ConcurrentHashMap<java.util.UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
-
-    private static class PlayerState {
-        Deque<Long> messageTimestamps = new ArrayDeque<>();
-        int perMinuteViolationCount = 0;
-        int burstViolationCount = 0;
+    private static final class PlayerState {
+        final ArrayDeque<Long> chatTimestamps = new ArrayDeque<>();
+        final ArrayDeque<Long> chatBurstWindow = new ArrayDeque<>();
     }
 
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
     private PlayerState getState(WindfallPlayer player) {
-        return playerStates.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
     }
 
     @Override
@@ -37,43 +35,35 @@ public class ChatCheck extends Check implements PacketCheck {
 
         PlayerState state = getState(player);
         long now = System.currentTimeMillis();
+        state.chatTimestamps.addLast(now);
+        state.chatBurstWindow.addLast(now);
 
-        // Add current message timestamp
-        state.messageTimestamps.addLast(now);
-
-        // Remove timestamps older than 1 minute
-        while (!state.messageTimestamps.isEmpty() && now - state.messageTimestamps.peekFirst() > MINUTE_WINDOW_MS) {
-            state.messageTimestamps.pollFirst();
+        while (!state.chatTimestamps.isEmpty() && now - state.chatTimestamps.peekFirst() > 60000) {
+            state.chatTimestamps.removeFirst();
+        }
+        while (!state.chatBurstWindow.isEmpty() && now - state.chatBurstWindow.peekFirst() > CHAT_BURST_WINDOW_MS) {
+            state.chatBurstWindow.removeFirst();
         }
 
-        // Per-minute rate limit check
-        if (state.messageTimestamps.size() > MAX_MESSAGES_PER_MINUTE) {
-            state.perMinuteViolationCount++;
+        int chatsPerMinute = state.chatTimestamps.size();
+        int chatsInBurst = state.chatBurstWindow.size();
+
+        if (chatsPerMinute > MAX_CHAT_PER_MINUTE) {
             increaseBuffer(player, 2.0);
             if (getBuffer(player) > 3.0) {
                 flag(player);
                 resetBuffer(player);
                 kickPlayer(player, "Chat rate limit exceeded (per-minute)");
             }
-            return;
-        }
-
-        // Burst detection: count messages in last 2 seconds
-        int burstCount = 0;
-        for (Long ts : state.messageTimestamps) {
-            if (now - ts <= BURST_WINDOW_MS) {
-                burstCount++;
-            }
-        }
-
-        if (burstCount > MAX_BURST_MESSAGES) {
-            state.burstViolationCount++;
+        } else if (chatsInBurst > MAX_CHAT_BURST) {
             increaseBuffer(player, 1.0);
             if (getBuffer(player) > 5.0) {
                 flag(player);
                 resetBuffer(player);
                 kickPlayer(player, "Chat burst detected");
             }
+        } else {
+            decreaseBuffer(player, 0.2);
         }
     }
 
@@ -82,8 +72,8 @@ public class ChatCheck extends Check implements PacketCheck {
     }
 
     @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid);
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     private void kickPlayer(WindfallPlayer player, String reason) {

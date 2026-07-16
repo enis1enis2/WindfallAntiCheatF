@@ -97,7 +97,7 @@ class PerPlayerStateTest extends CheckTestBase {
     @Test
     void chatCheck_stateMap_isConcurrentHashMap() throws Exception {
         ChatCheck check = new ChatCheck();
-        Field field = ChatCheck.class.getDeclaredField("playerStates");
+        Field field = ChatCheck.class.getDeclaredField("stateMap");
         field.setAccessible(true);
         assertInstanceOf(ConcurrentHashMap.class, field.get(check));
     }
@@ -125,7 +125,7 @@ class PerPlayerStateTest extends CheckTestBase {
     @Test
     void transactionCheck_stateMap_isConcurrentHashMap() throws Exception {
         TransactionCheck check = new TransactionCheck();
-        Field field = TransactionCheck.class.getDeclaredField("playerStates");
+        Field field = TransactionCheck.class.getDeclaredField("stateMap");
         field.setAccessible(true);
         assertInstanceOf(ConcurrentHashMap.class, field.get(check));
     }

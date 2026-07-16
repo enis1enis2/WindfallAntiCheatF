@@ -4,89 +4,83 @@ import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="NoFall A", stableKey="windfall.movement.nofall", decay=0.02, setbackVl=20)
+/**
+ * Detects no-fall hacks — clients that report {@code onGround=true} while falling, preventing
+ * fall damage and enabling fall-speed manipulation.
+ *
+ * <p>Algorithm: Flags when a player simultaneously:
+ * <ol>
+ *   <li>Has downward velocity exceeding {@value MIN_FALL_VELOCITY} blocks/tick (actually falling)</li>
+ *   <li>Has fallen more than {@value MIN_FALL_DISTANCE} blocks since last position</li>
+ *   <li>Claims to be on the ground ({@code onGround=true} in the movement packet)</li>
+ * </ol>
+ *
+ * <p>After {@value MAX_CONSECUTIVE} consecutive violations, the player is flagged. The check also
+ * tracks maximum observed fall distance and velocity for alert reporting context.
+ *
+ * <p>State reset occurs after a flag to avoid over-penalizing a single continuous fall.
+ *
+ * @see FlightCheck for the complementary no-fall sub-check within flight detection
+ * @see GroundSpoofCheck for ground-state verification
+ */
+@CheckData(name = "NoFall A", stableKey = "windfall.movement.nofall", decay = 0.01, setbackVl = 15, compat = {CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier = 1.2)
 public class NoFallCheck extends Check implements PacketCheck {
 
-    private static final double FALL_THRESHOLD = 0.5;
-    private static final double GROUND_VELOCITY_THRESHOLD = 0.001;
-    private static final int AIRBORNE_TICKS_MIN = 4;
+    /** Minimum downward velocity (blocks/tick) to confirm the player is actually falling */
+    private static final double MIN_FALL_VELOCITY = 0.3;
+    /** Minimum fall distance (blocks) to avoid false positives from minor Y-jitter */
+    private static final double MIN_FALL_DISTANCE = 2.0;
+    /** Consecutive falling-while-on-ground packets required before flagging */
+    private static final int MAX_CONSECUTIVE = 5;
 
-    private final ConcurrentHashMap<String, PlayerState> playerStates = new ConcurrentHashMap<>();
+    private static final class PlayerState {
+        int consecutiveNoFall;
+        double maxFallDistance;
+        double maxFallVelocity;
+    }
 
-    static final class PlayerState {
-        double fallDistance;
-        int airborneTicks;
-        double lastY;
-        boolean wasClaimedGround;
-        PlayerState() {}
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
+    private PlayerState getState(WindfallPlayer player) {
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (!(packet instanceof PlayerMoveC2SPacket)) return;
-        if (player.isFlying() || player.isGliding() || player.isCachedIsFallFlying()) return;
 
-        PlayerState state = playerStates.computeIfAbsent(player.getUuid().toString(), k -> new PlayerState());
+        PlayerState state = getState(player);
 
-        double deltaY = player.getY() - player.getLastY();
-        boolean claimedGround = player.isOnGround();
-        double verticalSpeed = player.getVerticalSpeed();
+        boolean onGround = player.isOnGround();
+        double deltaY = player.getDeltaY();
+        double fallDistance = player.getLastY() - player.getY();
 
-        if (!claimedGround) {
-            state.airborneTicks++;
-            if (deltaY < -0.01) {
-                state.fallDistance += Math.abs(deltaY);
-            }
-        }
+        if (deltaY < -MIN_FALL_VELOCITY && fallDistance > MIN_FALL_DISTANCE && onGround) {
+            state.consecutiveNoFall++;
 
-        if (state.airborneTicks >= AIRBORNE_TICKS_MIN
-            && claimedGround
-            && state.fallDistance > FALL_THRESHOLD
-            && verticalSpeed < GROUND_VELOCITY_THRESHOLD) {
-            increaseBuffer(player, 1.0);
-            if (getBuffer(player) > 2.0) {
+            if (fallDistance > state.maxFallDistance) state.maxFallDistance = fallDistance;
+            if (Math.abs(deltaY) > state.maxFallVelocity) state.maxFallVelocity = Math.abs(deltaY);
+
+            if (state.consecutiveNoFall >= MAX_CONSECUTIVE) {
                 flag(player);
-                resetBuffer(player);
+                state.consecutiveNoFall = 0;
+                state.maxFallDistance = 0;
+                state.maxFallVelocity = 0;
             }
-            state.fallDistance = 0;
-            state.airborneTicks = 0;
-        } else if (claimedGround) {
-            if (state.fallDistance < 0.01) {
-                decreaseBuffer(player, 0.2);
-            }
-            state.airborneTicks = 0;
+        } else {
+            state.consecutiveNoFall = Math.max(0, state.consecutiveNoFall - 1);
         }
-
-        if (claimedGround && !player.isLastOnGround()
-            && state.lastY - player.getY() > 0.5
-            && verticalSpeed < GROUND_VELOCITY_THRESHOLD) {
-            increaseBuffer(player, 0.6);
-            if (getBuffer(player) > 2.0) {
-                flag(player);
-                resetBuffer(player);
-            }
-        }
-
-        if (deltaY < -0.5 && claimedGround) {
-            increaseBuffer(player, 0.4);
-            if (getBuffer(player) > 2.0) {
-                flag(player);
-                resetBuffer(player);
-            }
-        }
-
-        state.lastY = player.getY();
-        state.wasClaimedGround = claimedGround;
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid.toString());
     }
 }

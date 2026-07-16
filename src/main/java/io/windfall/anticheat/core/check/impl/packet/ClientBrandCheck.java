@@ -1,21 +1,22 @@
 package io.windfall.anticheat.core.check.impl.packet;
 
+import io.windfall.anticheat.WindfallMod;
 import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import net.minecraft.network.packet.BrandCustomPayload;
 import net.minecraft.text.Text;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-@CheckData(name="ClientBrand A", stableKey="windfall.packet.clientbrand", decay=0.02, setbackVl=20)
+@CheckData(name="Client Brand A", stableKey="windfall.packet.clientbrand", decay=0.0, setbackVl=10)
 public class ClientBrandCheck extends Check implements PacketCheck {
 
     private static final Set<String> BLOCKED_BRANDS = new HashSet<>(Arrays.asList(
             "wurst", "impact", "moon", "liquidbounce", "koks", "aristois",
-            "vape", "rusherhack", "ghostly", "phobos", "fdp", "salhack",
-            "rise", "astolfo", "meteor", "inertia"
+            "vape", "rusherhack", "ghostly", "exhibiton", "phobos", "fdp", "salhack",
+            "rise", "astolfo", "blexware", "hanabi", "cabbage", "dotgod",
+            "sodium", "meteor", "inertia", "xplus", "tenacity", "nextgen", "crescent"
     ));
 
     @Override
@@ -23,7 +24,7 @@ public class ClientBrandCheck extends Check implements PacketCheck {
         if (!enabled) return;
         if (!(packet instanceof net.minecraft.network.packet.c2s.common.CustomPayloadC2SPacket cp)) return;
 
-        if (!(cp.payload() instanceof BrandCustomPayload brandPayload)) return;
+        if (!(cp.payload() instanceof net.minecraft.network.packet.BrandCustomPayload brandPayload)) return;
 
         String brand = brandPayload.brand();
         if (brand == null || brand.isEmpty()) return;
@@ -32,9 +33,8 @@ public class ClientBrandCheck extends Check implements PacketCheck {
 
         for (String blocked : BLOCKED_BRANDS) {
             if (normalized.contains(blocked)) {
-                increaseBuffer(player, 5.0);
                 flag(player);
-                resetBuffer(player);
+                WindfallMod.LOGGER.warn("[Client Brand A] {} detected suspicious brand: {}", player.getName(), brand);
                 kickPlayer(player, "Unauthorized client: " + brand);
                 return;
             }

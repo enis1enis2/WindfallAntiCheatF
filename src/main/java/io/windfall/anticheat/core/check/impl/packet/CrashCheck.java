@@ -6,21 +6,19 @@ import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.text.Text;
 
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="Crash A", stableKey="windfall.packet.crash", decay=0.02, setbackVl=20)
+@CheckData(name="Crash A", stableKey="windfall.packet.crash", decay=0.0, setbackVl=5)
 public class CrashCheck extends Check implements PacketCheck {
 
     private static final int MAX_CHAT_LENGTH = 32767;
     private static final int CHAT_VIOLATION_THRESHOLD = 3;
-    private static final double CREATIVE_BUFFER_THRESHOLD = 10.0;
 
-    private final ConcurrentHashMap<java.util.UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
 
     private static class PlayerState {
         int oversizedChatCount = 0;
-        double creativeBuffer = 0.0;
     }
 
     private PlayerState getState(WindfallPlayer player) {
@@ -33,30 +31,25 @@ public class CrashCheck extends Check implements PacketCheck {
 
         PlayerState state = getState(player);
 
-        // Oversized chat message detection
         if (packet instanceof ChatMessageC2SPacket) {
             ChatMessageC2SPacket chatPacket = (ChatMessageC2SPacket) packet;
             String message = chatPacket.chatMessage();
             if (message != null && message.length() > MAX_CHAT_LENGTH) {
                 state.oversizedChatCount++;
-                increaseBuffer(player, 1.0);
                 if (state.oversizedChatCount >= CHAT_VIOLATION_THRESHOLD) {
                     flag(player);
-                    resetBuffer(player);
-                    kickPlayer(player, "Oversized chat packets");
+                    kickPlayer(player, "Oversized chat packet");
+                    state.oversizedChatCount = 0;
                 }
-                return;
             }
         }
 
-        // Suspicious creative packets
         if (packet instanceof CreativeInventoryActionC2SPacket) {
-            state.creativeBuffer += 0.5;
-            if (state.creativeBuffer > CREATIVE_BUFFER_THRESHOLD) {
+            increaseBuffer(player, 0.5);
+            if (getBuffer(player) > 10.0) {
                 flag(player);
+                kickPlayer(player, "Suspicious creative packet");
                 resetBuffer(player);
-                state.creativeBuffer = 0.0;
-                kickPlayer(player, "Suspicious creative packets");
             }
         }
     }
@@ -66,7 +59,7 @@ public class CrashCheck extends Check implements PacketCheck {
     }
 
     @Override
-    public void removePlayer(java.util.UUID uuid) {
+    public void removePlayer(UUID uuid) {
         playerStates.remove(uuid);
     }
 

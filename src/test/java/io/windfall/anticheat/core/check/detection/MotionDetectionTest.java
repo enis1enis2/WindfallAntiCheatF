@@ -46,7 +46,7 @@ class MotionDetectionTest extends CheckTestBase {
         check.onPacketReceive(player, createMovePacket(0, 64, 0, true));
 
         UUID uuid = player.getUuid();
-        Field stateField = MotionCheck.class.getDeclaredField("playerStates");
+        Field stateField = MotionCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

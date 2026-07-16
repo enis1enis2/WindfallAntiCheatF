@@ -4,11 +4,13 @@ import io.windfall.anticheat.core.alert.AlertManager;
 import io.windfall.anticheat.api.WindfallAPI;
 import io.windfall.anticheat.api.WindfallProvider;
 import io.windfall.anticheat.api.WindfallAPIImpl;
+import io.windfall.anticheat.core.bedrock.GeyserManager;
 import io.windfall.anticheat.core.check.CheckManager;
 import io.windfall.anticheat.core.command.CommandManager;
 import io.windfall.anticheat.core.config.WindfallConfig;
 import io.windfall.anticheat.core.network.PacketListener;
 import io.windfall.anticheat.core.player.PlayerManager;
+import io.windfall.anticheat.core.plugin.ModDetector;
 import io.windfall.anticheat.core.punishment.PunishmentEngine;
 import io.windfall.anticheat.core.severity.SeverityManager;
 import io.windfall.anticheat.core.version.VersionManager;
@@ -46,6 +48,8 @@ public class WindfallMod implements ModInitializer {
     private AlertManager alertManager;
     private PunishmentEngine punishmentEngine;
     private SeverityManager severityManager;
+    private ModDetector modDetector;
+    private GeyserManager geyserManager;
     private volatile boolean running;
 
     @Override
@@ -68,6 +72,9 @@ public class WindfallMod implements ModInitializer {
         this.latencyCompensator = new LatencyCompensator();
         this.simulationEngine = new SimulationEngine(pingPongManager, latencyCompensator);
         this.severityManager = SeverityManager.fromConfig(config);
+        this.modDetector = new ModDetector();
+        this.modDetector.init();
+        this.geyserManager = GeyserManager.init();
         this.punishmentEngine = new PunishmentEngine(this);
         this.checkManager = new CheckManager(this);
         this.commandManager = new CommandManager(this);
@@ -123,6 +130,8 @@ public class WindfallMod implements ModInitializer {
     public AlertManager getAlertManager() { return alertManager; }
     public PunishmentEngine getPunishmentEngine() { return punishmentEngine; }
     public SeverityManager getSeverityManager() { return severityManager; }
+    public ModDetector getModDetector() { return modDetector; }
+    public GeyserManager getGeyserManager() { return geyserManager; }
     public boolean isRunning() { return running; }
     public Path getConfigDir() { return FabricLoader.getInstance().getConfigDir(); }
 }

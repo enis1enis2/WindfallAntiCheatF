@@ -45,7 +45,7 @@ class ElytraDetectionTest extends CheckTestBase {
         player.setPosition(0, 64, 0);
 
         for (int i = 0; i < 8; i++) {
-            double x = (i + 1) * 2.0;
+            double x = (i + 1) * 4.0;
             player.setPosition(x, 64, 0);
             check.onPacketReceive(player, createMovePacket(x, 64, 0, false));
         }
@@ -61,7 +61,7 @@ class ElytraDetectionTest extends CheckTestBase {
         check.onPacketReceive(player, createMovePacket(2, 64, 0, false));
 
         UUID uuid = player.getUuid();
-        Field stateField = ElytraCheck.class.getDeclaredField("playerStates");
+        Field stateField = ElytraCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

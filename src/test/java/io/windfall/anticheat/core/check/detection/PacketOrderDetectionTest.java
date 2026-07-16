@@ -25,6 +25,7 @@ class PacketOrderDetectionTest extends CheckTestBase {
 
     @Test
     void attackWithMovement_noFlag() {
+        check.onLoginComplete(player);
         check.onPacketReceive(player, createMovePacket(0.0, 64.0, 0.0, true));
         check.onPacketReceive(player, createSwingPacket());
         assertEquals(0.0, check.getBuffer(player), 0.001);
@@ -33,7 +34,7 @@ class PacketOrderDetectionTest extends CheckTestBase {
 
     @Test
     void consecutiveAttacksWithoutMovement_flags() {
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 7; i++) {
             check.onPacketReceive(player, createSwingPacket());
         }
         assertTrue(check.getBuffer(player) > 0.0 || check.getViolationLevel(player) > 0);
@@ -65,7 +66,7 @@ class PacketOrderDetectionTest extends CheckTestBase {
     void removePlayer_clearsState() throws Exception {
         check.onPacketReceive(player, createSwingPacket());
         UUID uuid = player.getUuid();
-        Field stateField = PacketOrderCheck.class.getDeclaredField("playerStates");
+        Field stateField = PacketOrderCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

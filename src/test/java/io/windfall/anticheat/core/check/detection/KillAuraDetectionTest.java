@@ -6,7 +6,6 @@ import io.windfall.anticheat.core.player.WindfallPlayer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -43,19 +42,24 @@ class KillAuraDetectionTest extends CheckTestBase {
         recentTargetsField.setAccessible(true);
         getUnsafe().putObject(playerState, getUnsafe().objectFieldOffset(recentTargetsField), new ArrayDeque<>());
 
-        Field yawSamplesField = psClass.getDeclaredField("yawSamples");
-        yawSamplesField.setAccessible(true);
-        getUnsafe().putObject(playerState, getUnsafe().objectFieldOffset(yawSamplesField), new ArrayDeque<>());
+        Field yawDeltasField = psClass.getDeclaredField("recentYawDeltas");
+        yawDeltasField.setAccessible(true);
+        getUnsafe().putObject(playerState, getUnsafe().objectFieldOffset(yawDeltasField), new ArrayDeque<>());
+
+        Field totalAttacksField = psClass.getDeclaredField("totalAttacks");
+        totalAttacksField.setAccessible(true);
+        totalAttacksField.setInt(playerState, 19);
+
         @SuppressWarnings("unchecked")
         Deque<Object> recentTargets = (Deque<Object>) recentTargetsField.get(playerState);
 
-        Class<?> trClass = Class.forName("io.windfall.anticheat.core.check.impl.combat.KillAuraCheck$PlayerState$TargetRecord");
-        Constructor<?> trCtor = trClass.getDeclaredConstructor(int.class, long.class);
-        trCtor.setAccessible(true);
+        Class<?> teClass = Class.forName("io.windfall.anticheat.core.check.impl.combat.KillAuraCheck$TargetEvent");
+        java.lang.reflect.Constructor<?> teCtor = teClass.getDeclaredConstructor(int.class, long.class);
+        teCtor.setAccessible(true);
 
         long now = System.currentTimeMillis();
         for (int i = 1; i <= 5; i++) {
-            recentTargets.addLast(trCtor.newInstance(i + 100, now));
+            recentTargets.addLast(teCtor.newInstance(i + 100, now));
         }
 
         Field stateMapField = KillAuraCheck.class.getDeclaredField("stateMap");

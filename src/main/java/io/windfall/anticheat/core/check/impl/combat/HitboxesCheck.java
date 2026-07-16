@@ -1,11 +1,13 @@
 package io.windfall.anticheat.core.check.impl.combat;
 
 import io.windfall.anticheat.core.check.*;
+import io.windfall.anticheat.core.check.PacketCheck;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="Hitboxes A", stableKey="windfall.combat.hitboxes", decay=0.01, setbackVl=15, compat={CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier=1.2)
+@CheckData(name = "Hitboxes A", stableKey = "windfall.combat.hitboxes", decay = 0.01, setbackVl = 15,
+    compat = {CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier = 1.2)
 public class HitboxesCheck extends Check implements PacketCheck {
 
     private static final double PLAYER_BOX_EXPANSION = 0.15;
@@ -22,8 +24,8 @@ public class HitboxesCheck extends Check implements PacketCheck {
 
     private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
 
-    private PlayerState getState(WindfallPlayer player) {
-        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    private PlayerState getState(UUID uuid) {
+        return stateMap.computeIfAbsent(uuid, k -> new PlayerState());
     }
 
     @Override
@@ -43,7 +45,7 @@ public class HitboxesCheck extends Check implements PacketCheck {
         });
         if (!isAttack[0]) return;
 
-        PlayerState state = getState(player);
+        PlayerState state = getState(player.getUuid());
         state.totalAttacks++;
 
         double eyeX = player.getX();
@@ -88,5 +90,6 @@ public class HitboxesCheck extends Check implements PacketCheck {
     }
 
     @Override
-    public void onPacketSend(WindfallPlayer player, Object packet) {}
+    public void onPacketSend(WindfallPlayer player, Object packet) {
+    }
 }

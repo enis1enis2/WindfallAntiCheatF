@@ -60,7 +60,7 @@ class ChestStealerDetectionTest extends CheckTestBase {
         check.onPacketReceive(player, clickPacket);
 
         UUID uuid = player.getUuid();
-        Field stateField = ChestStealerCheck.class.getDeclaredField("playerStates");
+        Field stateField = ChestStealerCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);

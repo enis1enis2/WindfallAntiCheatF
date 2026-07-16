@@ -1,107 +1,83 @@
 package io.windfall.anticheat.core.check.impl.movement;
 
 import io.windfall.anticheat.core.check.*;
+import io.windfall.anticheat.core.physics.VersionPhysics;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.block.Blocks;
-import net.minecraft.server.world.ServerWorld;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
-@CheckData(name="Step A", stableKey="windfall.movement.step", decay=0.02, setbackVl=20)
+/**
+ * Detects step-height violations — clients that instantly move upward by more than the legitimate
+ * maximum step height without jumping.
+ *
+ * <p>Algorithm: Only activates when the player is on the ground both now and on the previous tick
+ * (excludes jumps). The vertical delta (Y increase) is compared against the maximum step height
+ * for the player's current state:
+ * <ul>
+ *   <li>Sneaking: {@value MAX_STEP_HEIGHT_SNEAK} blocks</li>
+ *   <li>Climbing (ladder/vine): {@value MAX_STEP_HEIGHT_LADDER} blocks</li>
+ *   <li>Normal: version-dependent via {@link VersionPhysics#getStepHeight}</li>
+ * </ul>
+ *
+ * <p>Detection tiers:
+ * <ol>
+ *   <li>Overshoot &gt; 0.3 blocks → immediate flag (blatant step hack)</li>
+ *   <li>Overshoot &gt; {@value STEP_TOLERANCE} blocks → buffer increases by overshoot × 5.0</li>
+ *   <li>Buffer exceeds {@value STEP_BUFFER_FLAG_THRESHOLD} → flag</li>
+ * </ol>
+ *
+ * @see VersionPhysics#getStepHeight for protocol-version-dependent step limits
+ */
+@CheckData(name = "Step A", stableKey = "windfall.movement.step", decay = 0.01, setbackVl = 15, compat = {CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier = 1.2)
 public class StepCheck extends Check implements PacketCheck {
 
-    private static final double DEFAULT_STEP_HEIGHT = 0.6;
-    private static final double MAX_STEP_HEIGHT = 2.0;
-    private static final double STEP_TOLERANCE = 0.1;
-    private static final double MIN_HORIZONTAL_FOR_STEP = 0.05;
-
-    private final ConcurrentHashMap<UUID, PlayerState> playerStates = new ConcurrentHashMap<>();
-
-    static final class PlayerState {
-        int consecutiveViolations;
-        int stepUpTicks;
-        double lastY;
-    }
-
-    private PlayerState getState(UUID uuid) {
-        return playerStates.computeIfAbsent(uuid, k -> new PlayerState());
-    }
+    /** Maximum step height when sneaking — 0.6 blocks (vanilla value) */
+    private static final double MAX_STEP_HEIGHT_SNEAK = 0.6;
+    /** Maximum step height when on a ladder/vine — 2.0 blocks */
+    private static final double MAX_STEP_HEIGHT_LADDER = 2.0;
+    /** Minimum Y increase to consider as a step (avoids floating-point noise) and tolerance margin */
+    private static final double STEP_TOLERANCE = 0.05;
+    /** Buffer threshold at which gradual step violations trigger a flag */
+    private static final int STEP_BUFFER_FLAG_THRESHOLD = 3;
 
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (!(packet instanceof PlayerMoveC2SPacket)) return;
         if (player.isFlying() || player.isGliding() || player.isCachedIsFallFlying()) return;
 
-        PlayerState state = getState(player.getUuid());
+        if (player.isOnGround() && player.isLastOnGround()) {
+            double deltaY = player.getY() - player.getLastY();
 
-        double deltaY = player.getY() - player.getLastY();
-        double absDeltaY = Math.abs(deltaY);
-        double horizontalDist = Math.sqrt(
-            (player.getX() - player.getLastX()) * (player.getX() - player.getLastX()) +
-            (player.getZ() - player.getLastZ()) * (player.getZ() - player.getLastZ())
-        );
+            if (deltaY <= 0 || deltaY < STEP_TOLERANCE) return;
 
-        double maxStep = DEFAULT_STEP_HEIGHT;
-        if (player.isSwimming()) {
-            maxStep = MAX_STEP_HEIGHT;
-        }
-        if (player.isClimbing()) {
-            maxStep = 3.5;
-        }
+            double maxHeight = getMaxStepHeight(player);
 
-        maxStep += STEP_TOLERANCE;
+            if (deltaY > maxHeight + STEP_TOLERANCE) {
+                double overshoot = deltaY - maxHeight;
 
-        if (deltaY > 0 && player.isOnGround() && absDeltaY > maxStep) {
-            try {
-                ServerWorld world = (ServerWorld) player.getServerPlayer().getWorld();
-                BlockPos feetPos = new BlockPos((int) Math.floor(player.getX()), (int) Math.floor(player.getY()), (int) Math.floor(player.getZ()));
-                boolean onHoney = world.getBlockState(feetPos.down()).isOf(Blocks.HONEY_BLOCK);
-                boolean onSlime = world.getBlockState(feetPos.down()).isOf(Blocks.SLIME_BLOCK);
-
-                if (onHoney || onSlime) {
-                    maxStep = 1.2;
-                }
-            } catch (Exception e) {
-                // World access failed, use default maxStep
-            }
-
-            if (absDeltaY > maxStep) {
-                if (horizontalDist < MIN_HORIZONTAL_FOR_STEP && deltaY > 0) {
-                    state.consecutiveViolations++;
-                    state.stepUpTicks = 5;
-                } else if (horizontalDist >= MIN_HORIZONTAL_FOR_STEP) {
-                    state.stepUpTicks--;
-                    if (state.stepUpTicks <= 0) {
-                        state.consecutiveViolations = Math.max(0, state.consecutiveViolations - 1);
-                    }
+                if (overshoot > 0.3) {
+                    flag(player);
+                    return;
                 }
 
-                double severity = absDeltaY - maxStep;
-                double bufferInc = severity * (1.0 + state.consecutiveViolations * 0.5);
-                increaseBuffer(player, bufferInc);
-                if (getBuffer(player) > 2.0) {
+                increaseBuffer(player, overshoot * 5.0);
+                if (getBuffer(player) > STEP_BUFFER_FLAG_THRESHOLD) {
                     flag(player);
                     resetBuffer(player);
                 }
+            } else {
+                decreaseBuffer(player, 0.1);
             }
-        } else {
-            if (state.stepUpTicks > 0) state.stepUpTicks--;
-            else state.consecutiveViolations = Math.max(0, state.consecutiveViolations - 1);
-            decreaseBuffer(player, 0.1);
         }
-
-        state.lastY = player.getY();
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
     }
 
-    @Override
-    public void removePlayer(UUID uuid) {
-        playerStates.remove(uuid);
+    private double getMaxStepHeight(WindfallPlayer player) {
+        if (player.isClimbing()) return MAX_STEP_HEIGHT_LADDER;
+        if (player.isSneaking()) return MAX_STEP_HEIGHT_SNEAK;
+        int protocol = player.getProtocolVersion();
+        return VersionPhysics.getStepHeight(protocol);
     }
 }

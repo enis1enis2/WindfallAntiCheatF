@@ -1,8 +1,9 @@
 package io.windfall.anticheat.core.check.impl.movement;
 
 import io.windfall.anticheat.core.check.*;
-import io.windfall.anticheat.core.player.WindfallPlayer;
 import io.windfall.anticheat.core.physics.PhysicsConstants;
+import io.windfall.anticheat.core.version.VersionBracket;
+import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -13,11 +14,41 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-@CheckData(name="Velocity A", stableKey="windfall.movement.velocity", decay=0.01, setbackVl=30,
+/**
+ * Detects knockback (velocity) rejection — clients that receive an entity velocity packet but
+ * fail to reflect the expected movement in their subsequent position updates.
+ *
+ * <p>Algorithm:
+ * <ol>
+ *   <li><b>Capture</b>: When the server sends an {@code ENTITY_VELOCITY} packet to the player,
+ *       the raw velocity vector is decoded (divided by 8000.0 as per the MC protocol) and queued.</li>
+ *   <li><b>Apply physics</b>: On the next movement packet, the pending velocity is consumed and
+ *       run through {@link #applyPostVelocityPhysics} which applies ground friction,
+ *       air drag, water drag, climbing slowdown.</li>
+ *   <li><b>Compare</b>: The expected post-physics horizontal and vertical distances are compared
+ *       to the player's actual deltas. The combined ratio (average of horizontal and vertical)
+ *       indicates how much of the knockback was honored.</li>
+ * </ol>
+ *
+ * <p>Detection thresholds (adjusted for legacy versions and nearby walls):
+ * <ul>
+ *   <li>{@code combinedRatio &lt; 0.5 / tolerance} → blatant rejection, high buffer increase</li>
+ *   <li>{@code combinedRatio &lt; 0.8 / tolerance} → partial rejection, gradual buffer increase</li>
+ *   <li>{@code combinedRatio ≥ 0.8 / tolerance} → legitimate, buffer decreases</li>
+ * </ul>
+ *
+ * <p>Tolerance is widened for legacy protocol versions (+20%) and when the player is near a solid
+ * wall (+30%) to avoid false positives from legitimate block-collision knockback absorption.
+ *
+ * @see PhysicsConstants for vanilla friction/drag values
+ */
+@CheckData(name = "Velocity A", stableKey = "windfall.movement.velocity", decay = 0.01, setbackVl = 30,
     compat = {CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier = 1.3)
 public class VelocityCheck extends Check implements PacketCheck {
 
+    /** Minimum velocity magnitude to consider — filters out negligible knockback (noise threshold) */
     private static final double MIN_VELOCITY_THRESHOLD = 0.005;
+    /** Maximum queued velocity packets per player — prevents memory abuse from packet spam */
     private static final int MAX_PENDING_VELOCITIES = 5;
 
     private static final class PlayerState {
@@ -67,7 +98,6 @@ public class VelocityCheck extends Check implements PacketCheck {
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (!(packet instanceof PlayerMoveC2SPacket)) return;
-        if (!player.isVelocityReceived()) return;
 
         PlayerState state = getState(player);
 
@@ -75,7 +105,7 @@ public class VelocityCheck extends Check implements PacketCheck {
             PendingVelocity pv;
             while ((pv = state.pendingVelocities.peekFirst()) != null) {
                 long age = System.currentTimeMillis() - pv.receivedAt;
-                long timeout = 500L + Math.max(0, player.getTransactionPing());
+                long timeout = 500L + player.getTransactionPing();
                 if (age > timeout) {
                     state.pendingVelocities.pollFirst();
                     continue;
@@ -90,14 +120,10 @@ public class VelocityCheck extends Check implements PacketCheck {
                 state.velocityAge = 0;
                 return;
             }
-            player.setVelocityReceived(false);
             return;
         }
 
-        if (!state.velocityActive) {
-            player.setVelocityReceived(false);
-            return;
-        }
+        if (!state.velocityActive) return;
 
         state.velocityAge++;
 
@@ -111,7 +137,6 @@ public class VelocityCheck extends Check implements PacketCheck {
         if (expectedHorizontalDist < MIN_VELOCITY_THRESHOLD && Math.abs(state.expectedDeltaY) < MIN_VELOCITY_THRESHOLD) {
             state.velocityActive = false;
             resetBuffer(player);
-            player.setVelocityReceived(false);
             return;
         }
 
@@ -132,7 +157,6 @@ public class VelocityCheck extends Check implements PacketCheck {
         double combinedRatio = (horizontalRatio + verticalRatio) / 2.0;
 
         state.velocityActive = false;
-        player.setVelocityReceived(false);
 
         if (state.velocityAge > 5) {
             resetBuffer(player);
@@ -140,6 +164,13 @@ public class VelocityCheck extends Check implements PacketCheck {
         }
 
         double tolerance = 1.0;
+
+        int protocol = player.getProtocolVersion();
+        VersionBracket bracket = VersionBracket.fromProtocol(protocol);
+        if (bracket == VersionBracket.LEGACY) {
+            tolerance *= 1.2;
+        }
+
         if (isNearWall(player)) {
             tolerance *= 1.3;
         }
@@ -165,8 +196,8 @@ public class VelocityCheck extends Check implements PacketCheck {
     }
 
     private double[] applyPostVelocityPhysics(double velX, double velY, double velZ, WindfallPlayer player) {
-        double groundFriction = 0.91;
-        double gravity = Math.abs(PhysicsConstants.GRAVITY);
+        double groundFriction = PhysicsConstants.GROUND_FRICTION;
+        double gravity = PhysicsConstants.GRAVITY;
         double airDrag = PhysicsConstants.AIR_DRAG;
 
         double newDeltaX = velX * groundFriction;
@@ -174,7 +205,8 @@ public class VelocityCheck extends Check implements PacketCheck {
 
         double newDeltaY;
         if (player.isSwimming()) {
-            newDeltaY = velY * PhysicsConstants.WATER_DRAG - 0.02;
+            double waterDrag = player.getProtocolVersion() >= 393 ? PhysicsConstants.WATER_DRAG : 0.8;
+            newDeltaY = velY * waterDrag - 0.02;
         } else if (player.isClimbing()) {
             newDeltaY = Math.max(velY, -0.15);
             newDeltaX *= 0.2;
@@ -206,9 +238,12 @@ public class VelocityCheck extends Check implements PacketCheck {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
-                if (world.getBlockState(new BlockPos(px + dx, py - 1, pz + dz)).isSolidBlock(world, new BlockPos(px + dx, py - 1, pz + dz))) return true;
-                if (world.getBlockState(new BlockPos(px + dx, py, pz + dz)).isSolidBlock(world, new BlockPos(px + dx, py, pz + dz))) return true;
-                if (world.getBlockState(new BlockPos(px + dx, py + 1, pz + dz)).isSolidBlock(world, new BlockPos(px + dx, py + 1, pz + dz))) return true;
+                BlockPos p1 = new BlockPos(px + dx, py - 1, pz + dz);
+                BlockPos p2 = new BlockPos(px + dx, py, pz + dz);
+                BlockPos p3 = new BlockPos(px + dx, py + 1, pz + dz);
+                if (world.getBlockState(p1).isSolidBlock(world, p1)) return true;
+                if (world.getBlockState(p2).isSolidBlock(world, p2)) return true;
+                if (world.getBlockState(p3).isSolidBlock(world, p3)) return true;
             }
         }
         return false;

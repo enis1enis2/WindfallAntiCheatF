@@ -5,23 +5,31 @@ import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerActionC2SPacket;
 import net.minecraft.util.math.BlockPos;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="PositionBreak A", stableKey="windfall.movement.positionbreak", decay=0.02, setbackVl=20)
+@CheckData(name = "Position Break", stableKey = "windfall.movement.positionbreak", decay = 0.01, setbackVl = 15)
 public class PositionBreakCheck extends Check implements PacketCheck {
 
-    private static final double HARD_LIMIT = 5.0;
-    private static final int TRACKING_WINDOW = 20;
-    private static final double AVG_DISTANCE_THRESHOLD = 4.8;
+    private static final double MAX_REACH_SQ = 25.0;
+    private static final double TOLERANCE = 0.5;
+    private static final int BUFFER_THRESHOLD = 3;
 
-    private final ConcurrentHashMap<String, PlayerState> playerStates = new ConcurrentHashMap<>();
+    private static final class PlayerState {
+        float breakStartYaw;
+        float breakStartPitch;
+        boolean breaking;
+    }
 
-    static final class PlayerState {
-        Deque<Double> recentDistances = new ArrayDeque<>();
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
 
-        PlayerState() {}
+    private PlayerState getState(WindfallPlayer player) {
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
@@ -29,56 +37,43 @@ public class PositionBreakCheck extends Check implements PacketCheck {
         if (!(packet instanceof PlayerActionC2SPacket)) return;
 
         PlayerActionC2SPacket action = (PlayerActionC2SPacket) packet;
-        if (action.getAction() != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK) return;
+        PlayerActionC2SPacket.Action actionType = action.getAction();
 
-        BlockPos blockPos = action.getPos();
-        double blockCenterX = blockPos.getX() + 0.5;
-        double blockCenterY = blockPos.getY() + 0.5;
-        double blockCenterZ = blockPos.getZ() + 0.5;
-
-        double eyeX = player.getX();
-        double eyeY = player.getY() + player.getEyeHeight();
-        double eyeZ = player.getZ();
-
-        double dx = eyeX - blockCenterX;
-        double dy = eyeY - blockCenterY;
-        double dz = eyeZ - blockCenterZ;
-        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-        PlayerState state = playerStates.computeIfAbsent(player.getUuid().toString(), k -> new PlayerState());
-        state.recentDistances.addLast(distance);
-        while (state.recentDistances.size() > TRACKING_WINDOW) {
-            state.recentDistances.pollFirst();
+        if (actionType != PlayerActionC2SPacket.Action.START_DESTROY_BLOCK
+                && actionType != PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK) {
+            return;
         }
 
-        if (distance > HARD_LIMIT) {
-            increaseBuffer(player, (distance - HARD_LIMIT) / HARD_LIMIT);
-            if (getBuffer(player) > 2.0) {
+        BlockPos blockPos = action.getPos();
+        double centerX = blockPos.getX() + 0.5;
+        double centerY = blockPos.getY() + 0.5;
+        double centerZ = blockPos.getZ() + 0.5;
+
+        double eyeY = player.getY() + player.getHeight();
+
+        double dx = player.getX() - centerX;
+        double dy = eyeY - centerY;
+        double dz = player.getZ() - centerZ;
+        double distSq = dx * dx + dy * dy + dz * dz;
+
+        if (distSq > MAX_REACH_SQ + TOLERANCE) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > BUFFER_THRESHOLD) {
+                flag(player);
+                resetBuffer(player);
+            }
+        } else if (distSq > MAX_REACH_SQ) {
+            increaseBuffer(player, 0.3);
+            if (getBuffer(player) > 5.0) {
                 flag(player);
                 resetBuffer(player);
             }
         } else {
             decreaseBuffer(player, 0.1);
         }
-
-        if (state.recentDistances.size() >= TRACKING_WINDOW) {
-            double avg = state.recentDistances.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-            if (avg > AVG_DISTANCE_THRESHOLD) {
-                increaseBuffer(player, (avg - AVG_DISTANCE_THRESHOLD) / AVG_DISTANCE_THRESHOLD);
-                if (getBuffer(player) > 4.0) {
-                    flag(player);
-                    resetBuffer(player);
-                }
-            }
-        }
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid.toString());
     }
 }

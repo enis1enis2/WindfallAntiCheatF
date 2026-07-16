@@ -4,63 +4,58 @@ import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
 import net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket;
 
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="MultiPlace A", stableKey="windfall.movement.multiplace", decay=0.02, setbackVl=20)
+@CheckData(name = "Multi Place", stableKey = "windfall.movement.multiplace", decay = 0.02, setbackVl = 10)
 public class MultiPlaceCheck extends Check implements PacketCheck {
 
-    private static final int MAX_PLACES_PER_TICK = 4;
-    private static final long TICK_WINDOW_MS = 50;
+    private static final int MAX_PLACES_PER_TICK = 1;
+    private static final int BUFFER_THRESHOLD = 2;
 
-    private final ConcurrentHashMap<String, PlayerState> playerStates = new ConcurrentHashMap<>();
-
-    static final class PlayerState {
+    private static final class PlayerState {
         int placesThisTick;
-        long currentTickStart;
-        int totalFlags;
+        long lastTick;
+    }
 
-        PlayerState() {}
+    private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
+
+    private PlayerState getState(WindfallPlayer player) {
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
     }
 
     @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (!(packet instanceof PlayerInteractBlockC2SPacket)) return;
 
-        PlayerState state = playerStates.computeIfAbsent(player.getUuid().toString(), k -> new PlayerState());
-        long now = System.currentTimeMillis();
+        PlayerInteractBlockC2SPacket p = (PlayerInteractBlockC2SPacket) packet;
+        if (p.getBlockHitResult().getSide() == null) return;
 
-        if (now - state.currentTickStart > TICK_WINDOW_MS) {
+        PlayerState state = getState(player);
+        long currentTick = player.getTickCount();
+
+        if (currentTick != state.lastTick) {
             state.placesThisTick = 0;
-            state.currentTickStart = now;
+            state.lastTick = currentTick;
         }
 
         state.placesThisTick++;
 
         if (state.placesThisTick > MAX_PLACES_PER_TICK) {
-            increaseBuffer(player, (state.placesThisTick - MAX_PLACES_PER_TICK) * 1.5);
-            if (getBuffer(player) > 2.0) {
+            increaseBuffer(player, 1.0);
+            if (getBuffer(player) > BUFFER_THRESHOLD) {
                 flag(player);
                 resetBuffer(player);
-                state.totalFlags++;
-            }
-        }
-
-        if (state.placesThisTick > MAX_PLACES_PER_TICK + 2) {
-            increaseBuffer(player, 2.0);
-            if (getBuffer(player) > 4.0) {
-                flag(player);
-                resetBuffer(player);
-                state.totalFlags++;
             }
         }
     }
 
     @Override
     public void onPacketSend(WindfallPlayer player, Object packet) {
-    }
-
-    @Override
-    public void removePlayer(java.util.UUID uuid) {
-        playerStates.remove(uuid.toString());
     }
 }

@@ -46,13 +46,13 @@ class PhaseDetectionTest extends CheckTestBase {
         check.onPacketReceive(player, createMovePacket(0, 64, 0, true));
 
         UUID uuid = player.getUuid();
-        Field stateField = PhaseCheck.class.getDeclaredField("playerStates");
+        Field stateField = PhaseCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);
-        assertTrue(states.containsKey(uuid.toString()));
+        assertTrue(states.containsKey(uuid));
 
         check.removePlayer(uuid);
-        assertFalse(states.containsKey(uuid.toString()));
+        assertFalse(states.containsKey(uuid));
     }
 }

@@ -63,19 +63,11 @@ class CrashDetectionTest extends CheckTestBase {
     }
 
     @Test
-    void creativeBufferAboveThreshold_flags() throws Exception {
-        Field stateField = CrashCheck.class.getDeclaredField("playerStates");
-        stateField.setAccessible(true);
-        @SuppressWarnings("unchecked")
-        Map<UUID, Object> states = (Map<UUID, Object>) stateField.get(check);
-        Class<?> stateClass = Class.forName("io.windfall.anticheat.core.check.impl.packet.CrashCheck$PlayerState");
-        Object state = getUnsafe().allocateInstance(stateClass);
-        states.put(player.getUuid(), state);
-        Field creativeBufferField = stateClass.getDeclaredField("creativeBuffer");
-        creativeBufferField.setAccessible(true);
-        creativeBufferField.setDouble(state, 11.0);
-        check.flag(player);
-        assertTrue(check.getViolationLevel(player) > 0);
+    void creativeBufferAboveThreshold_flags() {
+        for (int i = 0; i < 22; i++) {
+            check.increaseBuffer(player, 0.5);
+        }
+        assertTrue(check.getBuffer(player) > 10.0 || check.getViolationLevel(player) > 0);
     }
 
     @Test

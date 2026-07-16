@@ -39,7 +39,7 @@ class MultiInteractDetectionTest extends CheckTestBase {
         @SuppressWarnings("unchecked")
         Map<UUID, Object> stateMap = (Map<UUID, Object>) stateMapField.get(check);
 
-        Class<?> interactStateClass = Class.forName("io.windfall.anticheat.core.check.impl.combat.MultiInteractCheck$InteractState");
+        Class<?> interactStateClass = Class.forName("io.windfall.anticheat.core.check.impl.combat.MultiInteractCheck$PlayerState");
         Object interactState = getUnsafe().allocateInstance(interactStateClass);
         stateMap.put(uuid, interactState);
 

@@ -48,13 +48,13 @@ class ScaffoldDetectionTest extends CheckTestBase {
         check.onTick(player, 0L);
 
         UUID uuid = player.getUuid();
-        Field stateField = ScaffoldCheck.class.getDeclaredField("playerStates");
+        Field stateField = ScaffoldCheck.class.getDeclaredField("stateMap");
         stateField.setAccessible(true);
         @SuppressWarnings("unchecked")
         Map<?, ?> states = (Map<?, ?>) stateField.get(check);
-        assertTrue(states.containsKey(uuid.toString()));
+        assertTrue(states.containsKey(uuid));
 
         check.removePlayer(uuid);
-        assertFalse(states.containsKey(uuid.toString()));
+        assertFalse(states.containsKey(uuid));
     }
 }

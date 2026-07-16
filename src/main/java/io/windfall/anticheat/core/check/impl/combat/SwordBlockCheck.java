@@ -1,103 +1,123 @@
 package io.windfall.anticheat.core.check.impl.combat;
 
 import io.windfall.anticheat.core.check.*;
+import io.windfall.anticheat.core.check.PacketCheck;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@CheckData(name="SwordBlock A", stableKey="windfall.combat.swordblock", decay=0.02, setbackVl=20, compat={CompatFlag.VERSION_LEGACY})
+@CheckData(name = "Sword Block A", stableKey = "windfall.combat.swordblock", decay = 0.015, setbackVl = 10,
+    minVersion = 5, maxVersion = 107)
 public class SwordBlockCheck extends Check implements PacketCheck {
 
-    private static final long BLOCK_ATTACK_GAP_THRESHOLD_MS = 200;
-    private static final int MIN_CONSECUTIVE_FLAGS = 4;
-    private static final double BLOCK_ATTACK_RATIO_THRESHOLD = 0.7;
-    private static final int MIN_ATTACKS_FOR_RATIO = 8;
-    private static final long RATIO_WINDOW_MS = 500;
+    private static final double BLOCK_AND_ATTACK_WINDOW_MS = 200;
+    private static final int BLOCK_SPAM_THRESHOLD = 4;
+    private static final long BLOCK_SPAM_WINDOW_MS = 1000;
+
+    private static final class PlayerState {
+        final ArrayDeque<Long> blockTimestamps = new ArrayDeque<>();
+        final ArrayDeque<Long> attackTimestamps = new ArrayDeque<>();
+        long lastBlockTime;
+        boolean hasBlock;
+        int consecutiveBlockAttacks;
+    }
 
     private final ConcurrentHashMap<UUID, PlayerState> stateMap = new ConcurrentHashMap<>();
-
-    private static class PlayerState {
-        long lastBlockTimestamp;
-        boolean waitingForAttack;
-        int consecutiveGapFlags;
-        final Deque<Long> attackTimestamps = new ArrayDeque<>();
-        final Deque<Long> blockTimestamps = new ArrayDeque<>();
-    }
 
     private PlayerState getState(UUID uuid) {
         return stateMap.computeIfAbsent(uuid, k -> new PlayerState());
     }
 
     @Override
+    public void removePlayer(UUID uuid) {
+        stateMap.remove(uuid);
+    }
+
+    @Override
     public void onPacketReceive(WindfallPlayer player, Object packet) {
-        if (packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket) {
-            PlayerState state = getState(player.getUuid());
-            long now = System.currentTimeMillis();
-            state.lastBlockTimestamp = now;
-            state.waitingForAttack = true;
-            state.blockTimestamps.addLast(now);
-            cleanupWindow(state.blockTimestamps, now, RATIO_WINDOW_MS);
+        if (packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket p) {
+            final boolean[] isAttack = {false};
+            p.handle(new net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket.Handler() {
+                public void interact(net.minecraft.util.Hand hand) {}
+                public void attack() { isAttack[0] = true; }
+                public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d location) {}
+            });
+            if (isAttack[0]) {
+                handleAttack(player);
+            }
+        } else if (packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractItemC2SPacket) {
+            handleBlock(player);
+        } else if (packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractBlockC2SPacket) {
+            handleBlockPlace(player);
         }
+    }
 
-        if (!(packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket p)) return;
+    @Override
+    public void onPacketSend(WindfallPlayer player, Object packet) {
+    }
 
-        final boolean[] isAttack = {false};
-        p.handle(new net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket.Handler() {
-            public void interact(net.minecraft.util.Hand hand) {}
-            public void attack() { isAttack[0] = true; }
-            public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d location) {}
-        });
-        if (!isAttack[0]) return;
-
+    private void handleAttack(WindfallPlayer player) {
         PlayerState state = getState(player.getUuid());
         long now = System.currentTimeMillis();
         state.attackTimestamps.addLast(now);
-        cleanupWindow(state.attackTimestamps, now, RATIO_WINDOW_MS);
+        while (!state.attackTimestamps.isEmpty() && now - state.attackTimestamps.peekFirst() > BLOCK_SPAM_WINDOW_MS) {
+            state.attackTimestamps.removeFirst();
+        }
 
-        if (state.waitingForAttack) {
-            long gap = now - state.lastBlockTimestamp;
-            state.waitingForAttack = false;
-
-            if (gap < BLOCK_ATTACK_GAP_THRESHOLD_MS) {
-                state.consecutiveGapFlags++;
-                if (state.consecutiveGapFlags >= MIN_CONSECUTIVE_FLAGS) {
-                    flag(player);
-                    resetBuffer(player);
-                    state.consecutiveGapFlags = 0;
-                } else {
-                    increaseBuffer(player, 0.5);
-                    if (getBuffer(player) > 2.0) { flag(player); resetBuffer(player); }
+        if (state.hasBlock) {
+            long blockAttackDelta = now - state.lastBlockTime;
+            if (blockAttackDelta < BLOCK_AND_ATTACK_WINDOW_MS) {
+                state.consecutiveBlockAttacks++;
+                if (state.consecutiveBlockAttacks >= BLOCK_SPAM_THRESHOLD) {
+                    increaseBuffer(player, 1.0);
+                    if (getBuffer(player) > 3.0) {
+                        flag(player);
+                        resetBuffer(player);
+                    }
+                    state.consecutiveBlockAttacks = 0;
                 }
             } else {
-                state.consecutiveGapFlags = 0;
-                decreaseBuffer(player, 0.2);
+                state.consecutiveBlockAttacks = Math.max(0, state.consecutiveBlockAttacks - 1);
             }
         }
 
-        int attacksInWindow = state.attackTimestamps.size();
-        int blocksInWindow = state.blockTimestamps.size();
-        if (attacksInWindow >= MIN_ATTACKS_FOR_RATIO) {
-            double ratio = (double) blocksInWindow / attacksInWindow;
-            if (ratio > BLOCK_ATTACK_RATIO_THRESHOLD) {
-                increaseBuffer(player, (ratio - BLOCK_ATTACK_RATIO_THRESHOLD) * 3.0);
-                if (getBuffer(player) > 2.0) { flag(player); resetBuffer(player); }
-            } else {
-                decreaseBuffer(player, 0.1);
+        checkBlockAttackSpeed(player, state, now);
+    }
+
+    private void handleBlock(WindfallPlayer player) {
+        PlayerState state = getState(player.getUuid());
+        long now = System.currentTimeMillis();
+        state.lastBlockTime = now;
+        state.hasBlock = true;
+        state.blockTimestamps.addLast(now);
+        while (!state.blockTimestamps.isEmpty() && now - state.blockTimestamps.peekFirst() > BLOCK_SPAM_WINDOW_MS) {
+            state.blockTimestamps.removeFirst();
+        }
+    }
+
+    private void handleBlockPlace(WindfallPlayer player) {
+        PlayerState state = getState(player.getUuid());
+        long now = System.currentTimeMillis();
+        state.lastBlockTime = now;
+        state.hasBlock = true;
+    }
+
+    private void checkBlockAttackSpeed(WindfallPlayer player, PlayerState state, long now) {
+        long windowMs = 500;
+        long recentAttacks = state.attackTimestamps.stream()
+            .filter(t -> now - t <= windowMs)
+            .count();
+
+        if (recentAttacks > 8) {
+            double blockRatio = (double) state.blockTimestamps.size() / Math.max(1, state.attackTimestamps.size());
+            if (blockRatio > 0.7) {
+                increaseBuffer(player, 0.5);
+                if (getBuffer(player) > 4.0) {
+                    flag(player);
+                    resetBuffer(player);
+                }
             }
         }
-    }
-
-    private void cleanupWindow(Deque<Long> deque, long now, long windowMs) {
-        while (!deque.isEmpty() && now - deque.peekFirst() > windowMs) {
-            deque.pollFirst();
-        }
-    }
-
-    @Override
-    public void onPacketSend(WindfallPlayer player, Object packet) {}
-
-    @Override
-    public void removePlayer(UUID uuid) {
-        stateMap.remove(uuid);
     }
 }
