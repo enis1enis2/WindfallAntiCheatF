@@ -1,6 +1,6 @@
 # WINDFALL ANTICHEAT F — PROJECT MEMORY BANK
 > Auto-generated for session continuity across compactions.
-> Last updated: 2026-07-16 (v1.0.0 — Initial Fabric port from Spigot v2.3.2)
+> Last updated: 2026-07-16 (v1.1.0 — Added GravityCheck + IllegalMoveCheck from Issue #26)
 
 ---
 
@@ -128,7 +128,7 @@
 **License:** MIT — Copyright (c) 2026 Enis Polat
 **Build:** Gradle, Java 17+, `./gradlew build` → `build/libs/windfall-fabric-1.0.0.jar`
 **Core dependency:** Fabric API 0.119.2+ (mod loader dependency)
-**Total checks:** 53 (12 combat + 29 movement + 11 packet + 1 inventory)
+**Total checks:** 55 (12 combat + 31 movement + 11 packet + 1 inventory)
 **Unit tests:** 76 (all passing, JUnit 5, NO Mockito — Unsafe + reflection only)
 
 ---
@@ -260,7 +260,7 @@ src/main/java/io/windfall/anticheat/
 
 ---
 
-## §6 ALL 53 CHECKS — Detection Details
+## §6 ALL 55 CHECKS — Detection Details
 
 ### COMBAT (12)
 
@@ -279,7 +279,7 @@ src/main/java/io/windfall/anticheat/
 | 11 | windfall.combat.selfinteract | Self Interact A | Self-attack packets — impossible from vanilla client, instant flag + kick | All | 0.0 | 5 |
 | 12 | windfall.combat.swordblock | Sword Block A | Impossible sword-block-while-attacking on pre-1.9 — block-attack timing < 200ms or speed ratio > 0.7 | **1.7-1.8 only** | 0.015 | 10 |
 
-### MOVEMENT (29)
+### MOVEMENT (31)
 
 | # | Key | Name | Detects | Versions | Decay | Setback |
 |---|-----|------|---------|----------|-------|---------|
@@ -312,28 +312,30 @@ src/main/java/io/windfall/anticheat/
 | 39 | windfall.movement.timer | Timer A | Timer speed/slow hacks — movement packets per tick over 1s window, speedhack > 1.2x or slowhack < 0.5x sustained | All | 0.005 | 25 |
 | 40 | windfall.movement.velocity | Velocity A | Knockback rejection — entity velocity received but movement doesn't reflect it, version-aware physics (legacy 0.4, modern 0.28 horizontal, 0.4 vertical) | All | 0.01 | 30 |
 | 41 | windfall.movement.wrongbreak | Wrong Break A | Spatially inconsistent breaks — > 2.0 blocks Y deviation or > 10.0 blocks horizontal teleport between breaks | All | 0.02 | 10 |
+| 42 | windfall.movement.gravity | Gravity A | Vertical movement not following vanilla gravity cycle — predicted deltaY = (lastDeltaY - 0.08) * 0.98, deviation > 0.05. Upward deviation when expected to fall penalized 1.5x | All | 0.01 | 8 |
+| 43 | windfall.movement.illegalmove | Illegal Move A | Sprint disabler — non-sprint horizontal speed > 0.24 (ground) or > 0.221 (air) when not sprinting for >20 ticks, friction-adjusted, velocity/potion compensated | All | 0.04 | 10 |
 
 ### PACKET (11)
 
 | # | Key | Name | Detects | Versions | Decay | Setback |
 |---|-----|------|---------|----------|-------|---------|
-| 42 | windfall.packet.bad | Bad Packets A | Malformed packets — NaN/Infinite coords (instant kick), Y out of bounds (modern -64 to 400, legacy 0-256), invalid rotation, > 20 attacks/tick, pre-login movement | All | 0.0 | 5 |
-| 43 | windfall.packet.clientbrand | Client Brand A | Known hacked clients — brand string matched against 26 cheat clients (wurst, impact, moon, liquidbounce, meteor, etc.) | All | 0.0 | 10 |
-| 44 | windfall.packet.chat | Chat A | Chat flooding — dual sliding window: 60/min sustained + 4/2s burst | All | 0.01 | 15 |
-| 45 | windfall.packet.cheststealer | Chest Stealer A | Automated chest stealing — > 40 clicks/window, > 6 fast clicks in 500ms, > 15 items/sec | All | 0.01 | 15 |
-| 46 | windfall.packet.crash | Crash A | Crash packets — oversized chat (> 32767 chars), suspicious creative inventory actions | All | 0.0 | 5 |
-| 47 | windfall.packet.creative | Creative A | Creative inventory exploits — actions in non-creative mode, > 5 creative actions/tick | All | 0.0 | 5 |
-| 48 | windfall.packet.exploit | Exploit A | Invalid/out-of-range values — window clicks (id > 200, slot > 60), entity interactions (id > 20000), held item (0-8 only) | All | 0.0 | 5 |
-| 49 | windfall.packet.order | Packet Order A | Out-of-order/duplicate packets — > 5 duplicates, > 15 packets in 100ms burst, movement before login | All | 0.01 | 15 |
-| 50 | windfall.packet.sprint | Sprint A | Abnormal sprint toggling — > 4 toggles/sec sustained over 3 consecutive windows (kill aura bots) | All | 0.01 | 15 |
-| 51 | windfall.packet.vehicle | Vehicle A | Vehicle exploits — INTERACT_AT when not mounted, > 3 steer/tick, vehicle speed > 2.0 | All | 0.01 | 15 |
-| 52 | windfall.packet.transaction | Transaction A | Delayed packet injection — transaction packet ordering violations (1.21.5: keepalive-based) | All | 0.01 | 15 |
+| 44 | windfall.packet.bad | Bad Packets A | Malformed packets — NaN/Infinite coords (instant kick), Y out of bounds (modern -64 to 400, legacy 0-256), invalid rotation, > 20 attacks/tick, pre-login movement | All | 0.0 | 5 |
+| 45 | windfall.packet.clientbrand | Client Brand A | Known hacked clients — brand string matched against 26 cheat clients (wurst, impact, moon, liquidbounce, meteor, etc.) | All | 0.0 | 10 |
+| 46 | windfall.packet.chat | Chat A | Chat flooding — dual sliding window: 60/min sustained + 4/2s burst | All | 0.01 | 15 |
+| 47 | windfall.packet.cheststealer | Chest Stealer A | Automated chest stealing — > 40 clicks/window, > 6 fast clicks in 500ms, > 15 items/sec | All | 0.01 | 15 |
+| 48 | windfall.packet.crash | Crash A | Crash packets — oversized chat (> 32767 chars), suspicious creative inventory actions | All | 0.0 | 5 |
+| 49 | windfall.packet.creative | Creative A | Creative inventory exploits — actions in non-creative mode, > 5 creative actions/tick | All | 0.0 | 5 |
+| 50 | windfall.packet.exploit | Exploit A | Invalid/out-of-range values — window clicks (id > 200, slot > 60), entity interactions (id > 20000), held item (0-8 only) | All | 0.0 | 5 |
+| 51 | windfall.packet.order | Packet Order A | Out-of-order/duplicate packets — > 5 duplicates, > 15 packets in 100ms burst, movement before login | All | 0.01 | 15 |
+| 52 | windfall.packet.sprint | Sprint A | Abnormal sprint toggling — > 4 toggles/sec sustained over 3 consecutive windows (kill aura bots) | All | 0.01 | 15 |
+| 53 | windfall.packet.vehicle | Vehicle A | Vehicle exploits — INTERACT_AT when not mounted, > 3 steer/tick, vehicle speed > 2.0 | All | 0.01 | 15 |
+| 54 | windfall.packet.transaction | Transaction A | Delayed packet injection — transaction packet ordering violations (1.21.5: keepalive-based) | All | 0.01 | 15 |
 
 ### INVENTORY (1)
 
 | # | Key | Name | Detects | Versions | Decay | Setback |
 |---|-----|------|---------|----------|-------|---------|
-| 53 | windfall.inventory.inventory | Inventory A | Inhuman inventory clicks — > 20 clicks/sec, rapid burst (5+ clicks in 50ms), creative access in survival | All | 0.02 | 15 |
+| 55 | windfall.inventory.inventory | Inventory A | Inhuman inventory clicks — > 20 clicks/sec, rapid burst (5+ clicks in 50ms), creative access in survival | All | 0.02 | 15 |
 
 ---
 
@@ -795,11 +797,15 @@ When research yields conflicting results:
 43. Created README.md with same banner + Turkish flag as Spigot edition
 44. Pushed to GitHub (commit 766e2c3)
 45. Ported MEMORYBANK.md from Spigot to Fabric (this file)
+46. Added GravityCheck (Gravity A) — vanilla gravity cycle validation (Issue #26 competitor analysis)
+47. Added IllegalMoveCheck (Illegal Move A) — sprint disabler detection (Issue #26 competitor analysis)
+48. Registered both checks in CheckManager (53 → 55 checks)
+49. Updated MEMORYBANK_F.md with new checks (movement 29 → 31, packet/inventory renumbered)
 
 ---
 
 *Last updated: 2026-07-16*
-*Current version: 1.0.0*
-*Total checks: 53*
+*Current version: 1.1.0*
+*Total checks: 55*
 *Total tests: 76 (all passing)*
 *Boot test: PASSED (Java 21 + MC 1.21.5)*

@@ -1,0 +1,147 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: Windfall-Fabric
+          path: build/libs/*.jar
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+
+      - name: Prepare release JARs
+        run: |
+          cd build/libs
+          JAR=$(ls windfall-fabric-*.jar | grep -v sources | head -1)
+          if [ -z "$JAR" ]; then
+            echo "ERROR: No release JAR found"
+            exit 1
+          fi
+          cp "$JAR" Windfall-Fabric.jar
+          sha256sum Windfall-Fabric.jar > Windfall-Fabric.jar.sha256
+          echo "=== SHA-256 Checksum ==="
+          cat Windfall-Fabric.jar.sha256
+          ls -la Windfall-Fabric*.jar
+
+      - name: Get commit info
+        id: commit
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          COMMIT_MSG=$(git log -1 --pretty=%s)
+          echo "short_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+          echo "commit_msg=$COMMIT_MSG" >> "$GITHUB_OUTPUT"
+
+      - name: Determine version tag
+        id: version
+        env:
+          COMMIT_MSG: ${{ steps.commit.outputs.commit_msg }}
+        run: |
+          if [[ "$COMMIT_MSG" =~ ^V:([0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?) ]]; then
+            TAG="v${BASH_REMATCH[1]}-fabric"
+            echo "is_version=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_version=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping release — commit message does not match V:x.y.x + Summary"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+
+      - name: Create release
+        if: steps.version.outputs.is_version == 'true'
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Windfall Fabric ${{ steps.version.outputs.tag }}"
+          body: |
+            ## Windfall Fabric ${{ steps.version.outputs.tag }}
+
+            **Commit:** `${{ steps.commit.outputs.short_sha }}`
+            **Message:** ${{ steps.commit.outputs.commit_msg }}
+
+            ### Verification
+            1. Download `Windfall-Fabric.jar` and `Windfall-Fabric.jar.sha256`
+            2. Verify checksum: `sha256sum -c Windfall-Fabric.jar.sha256`
+
+            ### Installation
+            1. Download `Windfall-Fabric.jar` from below
+            2. Place it in your server's `mods/` folder
+            3. Ensure Fabric API and PacketEvents are installed
+            4. Restart the server
+
+            **Requires:** Java 17+ · Fabric API · PacketEvents 2.13.0+ · MC 1.21+
+          files: |
+            build/libs/Windfall-Fabric.jar
+            build/libs/Windfall-Fabric.jar.sha256
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

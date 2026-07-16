@@ -1,0 +1,219 @@
+name: Anti-Cheat Monitor
+
+on:
+  schedule:
+    # Run every 24 hours at midnight UTC
+    - cron: '0 0 * * *'
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.11'
+
+      - name: Clone competitor repositories
+        run: |
+          mkdir -p .cache/anticheats
+
+          clone_or_update() {
+            local name=$1 url=$2 branch=$3
+            local dir=".cache/anticheats/$name"
+            if [ ! -d "$dir" ]; then
+              echo "Cloning $name ($branch)..."
+              git clone --depth 1 --branch "$branch" "$url" "$dir" 2>&1 || echo "WARN: Failed to clone $name"
+            else
+              echo "Updating $name..."
+              git -C "$dir" fetch origin "$branch" 2>&1
+              git -C "$dir" checkout "$branch" 2>&1
+              git -C "$dir" pull origin "$branch" 2>&1 || echo "WARN: Failed to pull $name"
+            fi
+          }
+
+          clone_or_update "Grim" "https://github.com/GrimAnticheat/Grim.git" "2.0"
+          clone_or_update "TruthfulAC" "https://github.com/TawnyE/TruthfulAC.git" "main"
+          clone_or_update "Arrow" "https://github.com/StelGR/ArrowAntiCheat.git" "master"
+          clone_or_update "CloudAC" "https://github.com/0xntpower/CloudAC.git" "main"
+
+          echo ""
+          echo "Cloned repositories:"
+          ls -la .cache/anticheats/
+
+      - name: Analyze competitor checks
+        run: |
+          python .github/scripts/analyze-checks.py
+          echo ""
+          echo "=== Report Preview ==="
+          head -80 .github/anticheat-report.md
+
+      - name: Compile and verify
+        run: |
+          chmod +x gradlew
+          ./gradlew build --no-daemon -q 2>&1 || echo "WARN: Compilation issues detected"
+
+      - name: Commit all changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Windfall Monitor"
+          git add .github/anticheat-report.md
+          git add .github/anticheat-diff.json
+          git diff --staged --quiet || git commit -m "chore: anti-cheat monitor update $(date -u +%Y-%m-%d) [skip ci]"
+          git push
+
+      - name: Create issue on new checks found
+        if: success()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const diffPath = '.github/anticheat-diff.json';
+            if (!fs.existsSync(diffPath)) return;
+
+            const diff = JSON.parse(fs.readFileSync(diffPath, 'utf8'));
+            let totalNew = 0;
+            let body = '## Anti-Cheat Monitor: New Checks Detected\n\n';
+
+            for (const [name, data] of Object.entries(diff)) {
+              if (!data.new_checks || data.new_checks.length === 0) continue;
+
+              // Deduplicate: group by base name (strip trailing variant letter like FooBarA → FooBar)
+              const grouped = {};
+              for (const check of data.new_checks) {
+                const base = check.raw_name.replace(/([a-z])([A-Z])$/, '$1').trim() || check.raw_name;
+                if (!grouped[base]) grouped[base] = [];
+                grouped[base].push(check);
+              }
+
+              totalNew += Object.keys(grouped).length;
+              body += `### ${name}\n\n`;
+
+              for (const [base, checks] of Object.entries(grouped)) {
+                if (checks.length === 1) {
+                  const c = checks[0];
+                  const filePath = c.file_path || 'unknown';
+                  const constants = c.constants && Object.keys(c.constants).length > 0
+                    ? Object.entries(c.constants).slice(0, 3).map(([k, v]) => `\`${k} = ${v}\``).join(', ')
+                    : '';
+                  body += `- **${c.raw_name}** (\`${c.category}\`) → \`${c.stable_key}\`\n`;
+                  body += `  - Source: \`${filePath}\``;
+                  if (constants) body += ` | Constants: ${constants}`;
+                  body += '\n';
+                } else {
+                  const c = checks[0];
+                  body += `- **${base}** (\`${c.category}\`) — ${checks.length} variants\n`;
+                  body += `  - Examples: ${checks.slice(0, 3).map(x => x.raw_name).join(', ')}`;
+                  if (checks.length > 3) body += ` +${checks.length - 3} more`;
+                  body += '\n';
+                  body += `  - Source: \`${c.file_path || 'unknown'}\`\n`;
+                }
+              }
+              body += '\n';
+            }
+
+            if (totalNew === 0) return;
+
+            body += `**Total: ${totalNew} new checks** found across competitors.\n\n`;
+            body += '### Implementation Guide\n\n';
+            body += '1. Review each check\'s source file above to understand the detection logic\n';
+            body += '2. Create a new check class following Windfall conventions (see existing checks)\n';
+            body += '3. Register in `CheckManager.java` with version gating\n';
+            body += '4. Tune thresholds and buffer values\n';
+            body += '5. Test on live server before enabling punishable mode\n\n';
+            body += 'Full report: `.github/anticheat-report.md` | Diff data: `.github/anticheat-diff.json`\n';
+
+            // Find existing open monitor issues
+            const existingIssues = await github.request('GET /repos/{owner}/{repo}/issues', {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'monitor',
+              per_page: 10,
+              headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+            });
+
+            // Resolve each old issue: comment implementation status then close
+            for (const issue of existingIssues.data) {
+              const issueBody = issue.body || '';
+              const keyMatches = [...issueBody.matchAll(/`(windfall\.\w+\.\w+)`/g)];
+              const oldKeys = [...new Set(keyMatches.map(m => m[1]))];
+
+              const checkManagerSrc = fs.readFileSync(
+                'src/main/java/io/windfall/anticheat/core/check/CheckManager.java', 'utf8'
+              );
+
+              let implemented = 0;
+              let notImplemented = 0;
+              const statusLines = [];
+
+              for (const key of oldKeys) {
+                const keyParts = key.split('.');
+                const className = keyParts[keyParts.length - 1];
+                const classRegex = new RegExp(`class\\s+\\w*${className}\\w*\\s+extends`, 'i');
+                if (classRegex.test(checkManagerSrc)) {
+                  implemented++;
+                  statusLines.push(`- ✅ \`${key}\` — implemented`);
+                } else {
+                  notImplemented++;
+                  statusLines.push(`- ⬜ \`${key}\` — not yet implemented`);
+                }
+              }
+
+              const comment = `## Monitor Status Update\n\n` +
+                `**Scan ran:** ${new Date().toISOString().slice(0, 10)}\n\n` +
+                (statusLines.length > 0
+                  ? `### Implementation Progress (${implemented}/${oldKeys.length})\n\n` +
+                    statusLines.join('\n') + '\n\n'
+                  : '') +
+                (notImplemented === 0 && oldKeys.length > 0
+                  ? `🎉 All checks from this issue are now implemented.\n\n`
+                  : notImplemented > 0
+                    ? `${notImplemented} check(s) still need implementation.\n\n`
+                    : '') +
+                `---\n*Closing this issue as a new scan has run. See the latest issue for current findings.*`;
+
+              await github.request('POST /repos/{owner}/{repo}/issues/{issue_number}/comments', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: comment,
+                headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+              });
+
+              await github.request('PATCH /repos/{owner}/{repo}/issues/{issue_number}', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed',
+                headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+              });
+
+              console.log(`Closed monitor issue #${issue.number} with status update`);
+            }
+
+            // Create new issue if there are new checks
+            if (totalNew > 0) {
+              await github.request('POST /repos/{owner}/{repo}/issues', {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `[Monitor] ${totalNew} new competitor checks detected (Fabric)`,
+                body: body,
+                labels: ['monitor'],
+                headers: { 'X-GitHub-Api-Version': '2022-11-28' },
+              });
+            }

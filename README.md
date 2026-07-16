@@ -27,7 +27,7 @@
 
 Windfall intercepts incoming packets via Fabric Mixins and evaluates player behaviour against a configurable set of checks. A **single JAR** works across every supported server version — no separate builds required.
 
-**53 checks** across 4 categories, with a **5-layer compatibility system** that adapts detection thresholds per-player based on protocol version, installed mods, and Bedrock status.
+**55 checks** across 4 categories, with a **5-layer compatibility system** that adapts detection thresholds per-player based on protocol version, installed mods, and Bedrock status.
 
 **Public API** available via `WindfallAPI` for external mods to query player data, violation levels, and check status.
 
@@ -56,7 +56,7 @@ Windfall intercepts incoming packets via Fabric Mixins and evaluates player beha
 </details>
 
 <details>
-<summary><strong>Movement</strong> — 29 checks</summary>
+<summary><strong>Movement</strong> — 31 checks</summary>
 
 | Check | Description |
 |-------|-------------|
@@ -68,7 +68,9 @@ Windfall intercepts incoming packets via Fabric Mixins and evaluates player beha
 | Far Place | Placing blocks beyond vanilla reach |
 | Fast Break | Breaking blocks faster than vanilla break times |
 | Flight | Vertical velocity prediction and hover detection |
+| Gravity | Vanilla gravity cycle validation: (deltaY - 0.08) * 0.98 |
 | Ground Spoof | Server-side ground state validation |
+| Illegal Move | Sprint disabler: non-sprint speed exceeding vanilla limits |
 | Invalid Break | Breaking air or indestructible blocks |
 | Invalid Place | Placing blocks in invalid positions |
 | Motion | General motion anomaly detection |

@@ -94,6 +94,8 @@ public class CheckManager {
         allChecks.add(new RotationPlaceCheck());
         allChecks.add(new PositionPlaceCheck());
         allChecks.add(new MultiPlaceCheck());
+        allChecks.add(new GravityCheck());
+        allChecks.add(new IllegalMoveCheck());
         allChecks.add(new BadPacketsCheck());
         allChecks.add(new ChestStealerCheck());
         allChecks.add(new CreativeCheck());
