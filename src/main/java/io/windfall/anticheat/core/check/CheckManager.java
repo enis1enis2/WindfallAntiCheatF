@@ -144,12 +144,12 @@ public class CheckManager {
                 check.reward(player);
                 if (check instanceof ScaffoldCheck) ((ScaffoldCheck) check).onTick(player, tickCounter);
                 if (check instanceof TransactionCheck) ((TransactionCheck) check).onTick(player);
+                if (check instanceof TimerCheck) ((TimerCheck) check).onTick(player);
             }
             if (mod.getPunishmentEngine() != null) mod.getPunishmentEngine().decayTierIfNeeded(player);
             pingPongManager.onTickEnd(player);
         }
-        if (tickCounter++ % 200 == 0) ReachCheck.cleanup(10_000L);
-        if (tickCounter % 6000 == 0) {
+        if (tickCounter++ % 6000 == 0) {
             if (mod.getAlertManager() != null) mod.getAlertManager().getDiscordWebhook().cleanupStaleEntries();
             packetFingerprint.onTick(tickCounter);
             violationPattern.pruneOldHistories();

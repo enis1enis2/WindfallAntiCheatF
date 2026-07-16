@@ -2,78 +2,153 @@ package io.windfall.anticheat.core.check.impl.combat;
 
 import io.windfall.anticheat.core.check.*;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import io.windfall.anticheat.core.util.MathUtil;
 import java.util.*;
 
-@CheckData(name="Reach A", stableKey="windfall.combat.reach", decay=0.01, setbackVl=15, compat={CompatFlag.LAG_COMPENSATED})
+@CheckData(name="Reach A", stableKey="windfall.combat.reach", decay=0.05, setbackVl=10, compat={CompatFlag.VIAVERSION_SENSITIVE, CompatFlag.RELAX_ON_MISMATCH}, relaxMultiplier=1.3)
 public class ReachCheck extends Check implements PacketCheck {
-    private static final double MAX_REACH = 3.0;
-    private static final long ATTACKER_SNAPSHOT_MAX_AGE_MS = 250;
-    private static final int MAX_SNAPSHOTS = 5;
-    private static final Map<UUID, java.util.Deque<AttackerSnapshot>> attackerSnapshots = new HashMap<>();
 
-    static class AttackerSnapshot {
+    private static final double TOLERANCE = 0.1;
+    private static final double PROTOCOL_MARGIN_LEGACY = 0.10;
+    private static final double PROTOCOL_MARGIN_MODERN = 0.03;
+    private static final double REACH_LEGACY = 4.0;
+    private static final double REACH_1_9_BASE = 3.0;
+    private static final double REACH_1_9_COOLDOWN_BONUS = 0.5;
+    private static final double PLAYER_WIDTH = 0.6;
+    private static final double PLAYER_HEIGHT = 1.8;
+    private static final int ROLLING_WINDOW = 20;
+    private static final int ATTACKER_SNAPSHOT_WINDOW = 5;
+    private static final long ATTACKER_SNAPSHOT_MAX_AGE_MS = 250L;
+
+    private static final class PlayerState {
+        final ArrayDeque<Double> reachSamples = new ArrayDeque<>();
+        final ArrayDeque<AttackerSnapshot> attackerSnapshots = new ArrayDeque<>();
+    }
+
+    private static final class AttackerSnapshot {
         final double eyeX, eyeY, eyeZ;
         final long timestamp;
-        AttackerSnapshot(double x, double y, double z) {
-            this.eyeX = x; this.eyeY = y; this.eyeZ = z;
-            this.timestamp = System.currentTimeMillis();
+        AttackerSnapshot(double eyeX, double eyeY, double eyeZ, long timestamp) {
+            this.eyeX = eyeX; this.eyeY = eyeY; this.eyeZ = eyeZ; this.timestamp = timestamp;
         }
     }
 
-    @Override public void onPacketReceive(WindfallPlayer player, Object packet) {
+    private final java.util.concurrent.ConcurrentHashMap<java.util.UUID, PlayerState> stateMap = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private PlayerState getState(WindfallPlayer player) {
+        return stateMap.computeIfAbsent(player.getUuid(), k -> new PlayerState());
+    }
+
+    @Override
+    public void removePlayer(java.util.UUID uuid) {
+        stateMap.remove(uuid);
+    }
+
+    @Override
+    public void onPacketReceive(WindfallPlayer player, Object packet) {
         if (packet instanceof net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket) {
-            net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket p = (net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket) packet;
             recordAttackerSnapshot(player);
         }
+
         if (!(packet instanceof net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket p)) return;
+
         final boolean[] isAttack = {false};
+        final net.minecraft.entity.Entity[] targetEntity = {null};
         p.handle(new net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket.Handler() {
-            @Override public void interact(net.minecraft.util.Hand hand) {}
-            @Override public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d pos) {}
-            @Override public void attack() { isAttack[0] = true; }
+            public void interact(net.minecraft.util.Hand hand) {}
+            public void attack() {
+                isAttack[0] = true;
+                try {
+                    targetEntity[0] = p.getEntity(player.getServerPlayer().getServerWorld());
+                } catch (Exception ignored) {}
+            }
+            public void interactAt(net.minecraft.util.Hand hand, net.minecraft.util.math.Vec3d location) {}
         });
-        if (!isAttack[0]) return;
+        if (!isAttack[0] || targetEntity[0] == null) return;
 
-        java.util.Deque<AttackerSnapshot> snapshots = attackerSnapshots.getOrDefault(player.getUuid(), new ArrayDeque<>());
+        PlayerState state = getState(player);
+        int ping = player.getTransactionPing();
+        double baseLimit = getReachLimit(ping);
+
+        double targetHalfWidth = targetEntity[0].getWidth() / 2.0;
+        double targetHeight = targetEntity[0].getHeight();
+        double targetMinX = targetEntity[0].getX() - targetHalfWidth;
+        double targetMinY = targetEntity[0].getY();
+        double targetMinZ = targetEntity[0].getZ() - targetHalfWidth;
+        double targetMaxX = targetEntity[0].getX() + targetHalfWidth;
+        double targetMaxY = targetEntity[0].getY() + targetHeight;
+        double targetMaxZ = targetEntity[0].getZ() + targetHalfWidth;
+
+        double bestReach = Double.MAX_VALUE;
         long now = System.currentTimeMillis();
-        double minReach = Double.MAX_VALUE;
 
-        for (AttackerSnapshot snap : snapshots) {
-            if (now - snap.timestamp > ATTACKER_SNAPSHOT_MAX_AGE_MS) continue;
-            double dx = player.getX() - snap.eyeX;
-            double dy = (player.getY() + player.getEyeHeight() / 2.0) - snap.eyeY;
-            double dz = player.getZ() - snap.eyeZ;
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            minReach = Math.min(minReach, dist);
+        ArrayDeque<AttackerSnapshot> snapshots = state.attackerSnapshots;
+
+        if (snapshots.isEmpty()) {
+            bestReach = computeAABBDistance(
+                    player.getX(), player.getY() + player.getEyeHeight(), player.getZ(),
+                    targetMinX, targetMinY, targetMinZ, targetMaxX, targetMaxY, targetMaxZ);
+        } else {
+            for (AttackerSnapshot snap : snapshots) {
+                if (now - snap.timestamp > ATTACKER_SNAPSHOT_MAX_AGE_MS) continue;
+                double reach = computeAABBDistance(snap.eyeX, snap.eyeY, snap.eyeZ,
+                        targetMinX, targetMinY, targetMinZ, targetMaxX, targetMaxY, targetMaxZ);
+                if (reach < bestReach) bestReach = reach;
+            }
+            double currentReach = computeAABBDistance(
+                    player.getX(), player.getY() + player.getEyeHeight(), player.getZ(),
+                    targetMinX, targetMinY, targetMinZ, targetMaxX, targetMaxY, targetMaxZ);
+            if (currentReach < bestReach) bestReach = currentReach;
         }
 
-        double dx = player.getX() - player.getLastX();
-        double dy = (player.getY() + player.getEyeHeight() / 2.0) - player.getY();
-        double dz = player.getZ() - player.getLastZ();
-        double currentDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        minReach = Math.min(minReach, currentDist);
+        state.reachSamples.addLast(bestReach);
+        if (state.reachSamples.size() > ROLLING_WINDOW) state.reachSamples.removeFirst();
 
-        if (minReach > MAX_REACH) {
-            increaseBuffer(player, (minReach - MAX_REACH) / MAX_REACH);
-            if (getBuffer(player) > 2.0) { flag(player); resetBuffer(player); }
+        double pingTolerance = Math.min(ping * 0.001, 0.3);
+        double protocolMargin = player.getProtocolVersion() < 107 ? PROTOCOL_MARGIN_LEGACY : PROTOCOL_MARGIN_MODERN;
+        double effectiveLimit = baseLimit + TOLERANCE + pingTolerance + protocolMargin;
+
+        if (bestReach > effectiveLimit) {
+            flag(player);
+            return;
+        }
+
+        double avgReach = state.reachSamples.stream()
+                .mapToDouble(Double::doubleValue).average().orElse(0.0);
+
+        if (avgReach > baseLimit + 0.05 && state.reachSamples.size() >= ROLLING_WINDOW / 2) {
+            increaseBuffer(player, 0.5);
+            if (getBuffer(player) > 3.0) { flag(player); resetBuffer(player); }
         } else {
             decreaseBuffer(player, 0.1);
         }
     }
 
     private void recordAttackerSnapshot(WindfallPlayer player) {
-        java.util.Deque<AttackerSnapshot> snapshots = attackerSnapshots.computeIfAbsent(player.getUuid(), k -> new ArrayDeque<>());
-        snapshots.offer(new AttackerSnapshot(player.getX(), player.getY() + player.getEyeHeight(), player.getZ()));
-        while (snapshots.size() > MAX_SNAPSHOTS) snapshots.pollFirst();
+        PlayerState state = getState(player);
+        state.attackerSnapshots.addLast(new AttackerSnapshot(
+                player.getX(), player.getY() + player.getEyeHeight(), player.getZ(),
+                System.currentTimeMillis()));
+        while (state.attackerSnapshots.size() > ATTACKER_SNAPSHOT_WINDOW) state.attackerSnapshots.removeFirst();
     }
 
-    @Override public void onPacketSend(WindfallPlayer player, Object packet) {}
-
-    public static void cleanup(long maxAgeMs) {
-        long now = System.currentTimeMillis();
-        attackerSnapshots.values().forEach(q -> q.removeIf(s -> now - s.timestamp > maxAgeMs));
+    private double computeAABBDistance(double eyeX, double eyeY, double eyeZ,
+                                       double bbMinX, double bbMinY, double bbMinZ,
+                                       double bbMaxX, double bbMaxY, double bbMaxZ) {
+        double closestX = Math.max(bbMinX, Math.min(eyeX, bbMaxX));
+        double closestY = Math.max(bbMinY, Math.min(eyeY, bbMaxY));
+        double closestZ = Math.max(bbMinZ, Math.min(eyeZ, bbMaxZ));
+        double dx = eyeX - closestX;
+        double dy = eyeY - closestY;
+        double dz = eyeZ - closestZ;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    @Override public void removePlayer(UUID uuid) { attackerSnapshots.remove(uuid); }
+    private double getReachLimit(int ping) {
+        if (ping <= 0) return REACH_LEGACY;
+        if (ping < 100) return REACH_1_9_BASE + REACH_1_9_COOLDOWN_BONUS;
+        return REACH_1_9_BASE;
+    }
+
+    @Override
+    public void onPacketSend(WindfallPlayer player, Object packet) {}
 }

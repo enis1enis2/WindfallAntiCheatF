@@ -130,7 +130,7 @@ public abstract class Check {
         player.getBuffers().merge(stableKey, amount, Double::sum);
     }
     public void decreaseBuffer(WindfallPlayer player, double amount) {
-        player.getBuffers().merge(stableKey, -amount, (a, b) -> Math.max(0.0, a + b));
+        player.getBuffers().merge(stableKey, 0.0, (a, b) -> Math.max(0.0, a - amount));
     }
     public void resetBuffer(WindfallPlayer player) {
         player.getBuffers().put(stableKey, 0.0);

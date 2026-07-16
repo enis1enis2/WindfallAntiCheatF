@@ -3,7 +3,6 @@ package io.windfall.anticheat.mixin;
 import io.windfall.anticheat.WindfallMod;
 import io.windfall.anticheat.core.player.PlayerManager;
 import io.windfall.anticheat.core.player.WindfallPlayer;
-import net.minecraft.network.packet.c2s.common.KeepAliveC2SPacket;
 import net.minecraft.network.packet.c2s.play.*;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -141,6 +140,19 @@ public abstract class ServerPlayNetworkHandlerMixin {
 
     @Inject(method = "onPlayerInteractItem", at = @At("HEAD"))
     private void windfall_onInteractItem(PlayerInteractItemC2SPacket packet, CallbackInfo ci) {
+        ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
+        ServerPlayerEntity player = handler.getPlayer();
+        if (player == null) return;
+        WindfallMod mod = WindfallMod.getInstance();
+        if (mod == null) return;
+        PlayerManager pm = mod.getPlayerManager();
+        WindfallPlayer wp = pm.get(player.getUuid());
+        if (wp == null || !wp.isValid()) return;
+        mod.getCheckManager().onPacketReceive(wp, packet);
+    }
+
+    @Inject(method = "onChatMessage", at = @At("HEAD"))
+    private void windfall_onChatMessage(ChatMessageC2SPacket packet, CallbackInfo ci) {
         ServerPlayNetworkHandler handler = (ServerPlayNetworkHandler) (Object) this;
         ServerPlayerEntity player = handler.getPlayer();
         if (player == null) return;

@@ -4,9 +4,8 @@
   "compatibilityLevel": "JAVA_17",
   "mixins": [
     "ServerPlayNetworkHandlerMixin",
-    "ServerPlayerEntityMixin",
-    "PlayerEntityMixin",
-    "MinecraftServerMixin"
+    "ClientConnectionMixin",
+    "PlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

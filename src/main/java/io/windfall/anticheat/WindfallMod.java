@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
-public final class WindfallMod implements ModInitializer {
+public class WindfallMod implements ModInitializer {
     public static final String MOD_ID = "windfall-fabric";
     public static final Logger LOGGER = LoggerFactory.getLogger("Windfall");
 

@@ -17,7 +17,14 @@ public class ActionData {
         }
     }
 
+    private volatile boolean usingItem;
+    private volatile long useItemStart;
+
     public ActionData(WindfallPlayer player) { this.player = player; }
+
+    public boolean isUsingItem() { return usingItem; }
+    public void setUsingItem(boolean using) { this.usingItem = using; if (using) useItemStart = System.currentTimeMillis(); }
+    public long getUseItemStart() { return useItemStart; }
 
     public void recordBlockPlace(int x, int y, int z) {
         recentBlockPlacements.offer(new BlockAction(x, y, z));
