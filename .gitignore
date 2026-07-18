@@ -8,3 +8,5 @@ bin/
 fabric-loom/
 runs/
 *.log
+MEMORYBANK.md
+MEMORYBANK_F.md

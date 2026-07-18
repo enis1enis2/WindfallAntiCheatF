@@ -1,6 +1,6 @@
 # WINDFALL ANTICHEAT F — PROJECT MEMORY BANK
 > Auto-generated for session continuity across compactions.
-> Last updated: 2026-07-16 (v1.1.0 — Added GravityCheck + IllegalMoveCheck from Issue #26)
+> Last updated: 2026-07-18 (v1.1.2 — Fix auto-release to trigger on main branch)
 
 ---
 
@@ -122,14 +122,14 @@
 
 **Windfall AntiCheat F** is a Fabric mod port of the Spigot/Paper Windfall anti-cheat plugin.
 
-**Source:** https://github.com/enis1enis2/Windfall-AntiCheat (Fabric branch)
+**Source:** https://github.com/enis1enis2/WindfallAntiCheatF
 **Platform:** Fabric Mod (NOT Bukkit/Spigot/Paper)
 **Base:** 1:1 port from Windfall Spigot (v2.3.2)
 **License:** MIT — Copyright (c) 2026 Enis Polat
-**Build:** Gradle, Java 17+, `./gradlew build` → `build/libs/windfall-fabric-1.0.0.jar`
+**Build:** Gradle, Java 17+, `./gradlew build` → `build/libs/windfall-fabric-1.1.2.jar`
 **Core dependency:** Fabric API 0.119.2+ (mod loader dependency)
 **Total checks:** 55 (12 combat + 31 movement + 11 packet + 1 inventory)
-**Unit tests:** 76 (all passing, JUnit 5, NO Mockito — Unsafe + reflection only)
+**Unit tests:** 218 (all passing, JUnit 5, NO Mockito — Unsafe + reflection only)
 
 ---
 
@@ -163,7 +163,7 @@ src/main/java/io/windfall/anticheat/
 │   │   ├── PacketCheck.java      # Packet check base
 │   │   └── impl/
 │   │       ├── combat/           # 12 combat checks
-│   │       ├── movement/         # 29 movement checks
+│   │       ├── movement/         # 31 movement checks
 │   │       ├── packet/           # 11 packet checks
 │   │       └── inventory/        # 1 inventory check
 │   ├── config/WindfallConfig.java
@@ -222,7 +222,7 @@ src/main/java/io/windfall/anticheat/
 
 ## §4 TEST COVERAGE
 
-76 unit tests across 7 test classes (JUnit 5, NO Mockito — Unsafe + reflection only):
+218 unit tests across 42 test classes (JUnit 5, NO Mockito — Unsafe + reflection only):
 
 | Test Class | Tests | What it covers |
 |---|---|---|
@@ -231,8 +231,43 @@ src/main/java/io/windfall/anticheat/
 | BadPacketsDetectionTest | 16 | NaN, Y bounds, rotation, duplicate, auto-clicker, removePlayer |
 | ChatDetectionTest | 7 | Burst, rate limit, removePlayer |
 | CrashDetectionTest | 7 | Oversized chat, creative buffer state, removePlayer |
-| NoFallDetectionTest | 5 | Fall + ground claim, flying, descent, removePlayer |
-| CriticalsDetectionTest | 10 | Attack on ground/flying/gliding/sneaking, airborne no motion, valid motion, removePlayer |
+| VelocityDetectionTest | 7 | Knockback rejection, velocity received but not reflected |
+| CriticalsDetectionTest | 9 | Attack on ground/flying/gliding/sneaking, airborne no motion, valid motion, removePlayer |
+| FlightDetectionTest | 6 | Vertical movement, hover, upward motion without cause |
+| PacketOrderDetectionTest | 6 | Out-of-order/duplicate packets, burst detection |
+| RotationBreakDetectionTest | 6 | Excessive rotation between break start and finish |
+| SprintDetectionTest | 6 | Abnormal sprint toggling detection |
+| NoFallDetectionTest | 5 | onGround=true while falling with velocity |
+| NoSwingDetectionTest | 5 | Breaking/placing without arm-swing animation |
+| InvalidPlaceDetectionTest | 5 | Block placement validation |
+| MultiBreakDetectionTest | 5 | Multiple block breaks in single tick |
+| MultiPlaceDetectionTest | 5 | Multiple block placements in single tick |
+| FastBreakDetectionTest | 5 | Breaking blocks faster than vanilla survival |
+| GroundSpoofDetectionTest | 5 | False on-ground state detection |
+| InventoryDetectionTest | 5 | Inventory click rate detection |
+| SpeedDetectionTest | 5 | Horizontal speed exceeding predicted max |
+| TransactionDetectionTest | 5 | Transaction/keepalive manipulation detection |
+| WrongBreakDetectionTest | 5 | Spatially inconsistent breaks |
+| BacktrackDetectionTest | 5 | Delayed/frozen position updates |
+| ClientBrandDetectionTest | 5 | Known hacked client brand detection |
+| AimDetectionTest | 4 | Inhuman aim patterns, instant-snap |
+| CreativeDetectionTest | 4 | Creative inventory exploits |
+| ExploitDetectionTest | 4 | Invalid/out-of-range values |
+| MacroDetectionTest | 4 | Movement macros, repetitive patterns |
+| SelfInteractDetectionTest | 4 | Self-attack packets |
+| SimulationDetectionTest | 4 | Movement simulation mismatch |
+| ElytraDetectionTest | 3 | Illegal elytra flight |
+| KillAuraDetectionTest | 3 | Target-switching speed, rotation symmetry |
+| ReachDetectionTest | 3 | Reach extension, Euclidean distance |
+| BaritoneDetectionTest | 2 | Automated pathfinding, straight lines |
+| ChestStealerDetectionTest | 2 | Automated chest stealing |
+| HitboxesDetectionTest | 2 | Hitbox expansion detection |
+| MotionDetectionTest | 2 | Impossible horizontal/vertical motion |
+| MultiInteractDetectionTest | 2 | Multi-aura, multiple entities in single tick |
+| PhaseDetectionTest | 2 | Noclip, moving through solid blocks |
+| ScaffoldDetectionTest | 2 | Auto-bridge, block placement speed |
+| AutoclickerDetectionTest | 2 | Automated click-rate detection |
+| VehicleDetectionTest | 2 | Vehicle exploits, INTERACT_AT when not mounted |
 
 **Run tests:** `./gradlew test`
 **Test infrastructure:** `sun.misc.Unsafe.allocateInstance()` + reflection for all object creation; no mocking at all
@@ -433,7 +468,7 @@ public @interface CheckData {
 ```
 
 ### Output
-- `build/libs/windfall-fabric-1.0.0.jar`
+- `build/libs/windfall-fabric-1.1.2.jar`
 
 ### Install
 - Place jar in `mods/` directory
@@ -472,7 +507,7 @@ Config file: `config/windfall.json`
 - Gson 2.11.0 (bundled with MC)
 
 ### Compile
-- Fabric Loom 1.9
+- Fabric Loom 1.14-SNAPSHOT (requires Java 21+)
 - Yarn mappings 1.21.5+build.1 (or Mojmap)
 
 ### Test
@@ -801,11 +836,25 @@ When research yields conflicting results:
 47. Added IllegalMoveCheck (Illegal Move A) — sprint disabler detection (Issue #26 competitor analysis)
 48. Registered both checks in CheckManager (53 → 55 checks)
 49. Updated MEMORYBANK_F.md with new checks (movement 29 → 31, packet/inventory renumbered)
+50. Created `.github/workflows/build.yml` — CI build + auto-release on `V:x.y.z` commits (JDK 17, Gradle)
+51. Created `.github/workflows/owasp.yml` — standalone OWASP CLI scan with NVD API key support
+52. Created `.github/workflows/anticheat-monitor.yml` — daily competitor scanning + auto-issue creation
+53. Created `.github/scripts/analyze-checks.py` — check analysis engine (identical logic to Spigot edition)
+54. Created `.github/dependabot.yml` — Gradle ecosystem dependency updates
+55. **Fixed CI: JDK 17 → 21** — fabric-loom 1.14+ requires Java 21 for compilation
+56. **Fixed CI: OWASP binary path** — `dependency-check` → `dependency-check.sh`, URL `jeremylong` → `dependency-check`
+57. **Fixed CI: auto-release branch** — `refs/heads/master` → `refs/heads/main`
+58. **Created release v1.1.1-fabric** — manually uploaded `windfall-fabric-1.0.0.jar` (596KB) + SHA256 checksum
+59. **Closed 4 dependabot PRs** — all had merge conflicts or outdated CI (setup-java, junit-jupiter, fabric-loom, gson)
+60. **Squashed commit history** — 3 fix commits → single `V:1.1.1 + Fix CI workflows for Fabric`
+61. **Committed** — `V:1.1.2 + Fix auto-release to trigger on main branch`
+62. **Audit** — cross-edition MEMORYBANK audit, fixed discrepancies in both editions
+63. **HSF Edition Build Success (2026-07-18):** Fixed `RepositoriesMode.PREFER_SETTINGS` in settings.gradle.kts (incompatible with Fabric Loom). Added repos to spigot/build.gradle.kts. Upgraded shadow plugin from 8.3.5 to 9.5.1 (JDK 26 class file version 70 support). Full project build succeeded across common/spigot/fabric modules. Downloaded 7 server JARs + PacketEvents from Modrinth. Created config.yml in spigot resources. Fixed SpigotConfigAdapter null config. Added Folia support (folia-supported: true + global region scheduler). Booted and verified 4 servers: Paper 1.21.4, Paper 1.20.4, Purpur 1.21.4, Folia 1.21.4 — all load Windfall with 73 checks. Fixed 23 Fabric compilation errors for 1.21.5 Yarn mappings (BanList→BannedPlayerList, MinecraftServer.getServer() removed, PlayerSkin→SkinTextures, etc.). Paper 1.16.5/Purpur 1.16.5 blocked by JDK 26 (patcher needs ≤15/16).
 
 ---
 
-*Last updated: 2026-07-16*
-*Current version: 1.1.0*
+*Last updated: 2026-07-18*
+*Current version: 1.1.2*
 *Total checks: 55*
-*Total tests: 76 (all passing)*
+*Total tests: 218 (all passing)*
 *Boot test: PASSED (Java 21 + MC 1.21.5)*
