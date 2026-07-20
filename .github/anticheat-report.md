@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-07-19 02:31:46 UTC
+**Generated:** 2026-07-20 02:46:42 UTC
 
 ---
 
@@ -300,6 +300,7 @@
 - `AimF` → `Aim A`
 - `KillauraA` → `Kill Aura A`
 - `HitboxA` → `Hitboxes A`
+- `MacroB` → `Macro A`
 - `AutoClickerG` → `Autoclicker A`
 - `AutoClickerD` → `Autoclicker A`
 - `AutoClickerC` → `Autoclicker A`
