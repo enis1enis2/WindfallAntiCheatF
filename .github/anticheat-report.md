@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-08-20 01:05:53 UTC
+**Generated:** 2026-08-21 01:09:23 UTC
 
 ---
 
@@ -322,7 +322,6 @@
 - `GravityA` → `Gravity A`
 - `GravityC` → `Gravity A`
 - `MotionD` → `Motion A`
-- `MotionF` → `Motion A`
 - `MotionA` → `Motion A`
 - `MotionB` → `Motion A`
 - `MotionE` → `Motion A`
@@ -333,7 +332,6 @@
 - `TimerA` → `Timer A`
 - `TimerC` → `Timer A`
 - `InventoryA` → `Inventory A`
-- `InventoryB` → `Inventory A`
 - `VehicleA` → `Vehicle A`
 - `ScaffoldC` → `Scaffold A`
 - `ScaffoldB` → `Scaffold A`
@@ -341,7 +339,6 @@
 - `InteractA` → `Multi Interact A`
 - `InteractD` → `Reach A`
 - `InteractC` → `Multi Interact A`
-- `PhaseA` → `Phase A`
 - `HitboxA` → `Hitboxes A`
 - `BackTrackA` → `Backtrack A`
 - `BackTrackB` → `Backtrack A`
