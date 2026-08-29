@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-08-28 09:33:23 UTC
+**Generated:** 2026-08-29 05:39:32 UTC
 
 ---
 
@@ -265,18 +265,6 @@
 - `KillAuraD` → `Kill Aura A`
 - `KillAuraB` → `Kill Aura A`
 - `KillAuraC` → `Kill Aura A`
-- `AimJ` → `Aim A`
-- `AimE` → `Aim A`
-- `AimA` → `Aim A`
-- `AimI` → `Aim A`
-- `AimH` → `Aim A`
-- `AimB` → `Aim A`
-- `AimK` → `Aim A`
-- `AimD` → `Aim A`
-- `AimL` → `Aim A`
-- `AimF` → `Aim A`
-- `AimG` → `Aim A`
-- `AimX` → `Aim A`
 - `CrystalAuraA` → `Kill Aura A`
 - `AnchorAuraA` → `Kill Aura A`
 - `AutoClickerE` → `Autoclicker A`
