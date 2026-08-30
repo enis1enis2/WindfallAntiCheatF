@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-08-29 05:39:32 UTC
+**Generated:** 2026-08-30 03:39:34 UTC
 
 ---
 
@@ -77,7 +77,15 @@
 
 ### Grim
 
-**No new checks detected.**
+**Missing from Windfall Fabric (3 checks):**
+
+- `movement` **InvalidPlaceCursor** → `windfall.movement.invalid place cursor`
+  - Source: `common/src/main/java/ac/grim/grimac/checks/impl/scaffolding/InvalidPlaceCursor.java`
+- `movement` **InvalidPlaceFace** → `windfall.movement.invalid place face`
+  - Source: `common/src/main/java/ac/grim/grimac/checks/impl/scaffolding/InvalidPlaceFace.java`
+- `combat` **InvalidInteractCursor** → `windfall.combat.invalid interact cursor`
+  - Source: `common/src/main/java/ac/grim/grimac/checks/impl/combat/InvalidInteractCursor.java`
+  - `scale = (float) packetEntity.getAttributeValue(Attributes.SCALE)`
 
 **Matched with existing Windfall Fabric checks:**
 
@@ -129,8 +137,6 @@
 - `DuplicateRotPlace` → `Rotation Place`
 - `MultiPlace` → `Multi Place`
 - `PositionPlace` → `Position Place`
-- `InvalidPlaceA` → `InvalidPlace A`
-- `InvalidPlaceB` → `InvalidPlace A`
 - `ElytraC` → `Elytra A`
 - `ElytraE` → `Elytra A`
 - `ElytraG` → `Elytra A`
@@ -360,7 +366,7 @@
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **8 new checks** across competitors that Windfall Fabric doesn't have
+- Found **11 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 
