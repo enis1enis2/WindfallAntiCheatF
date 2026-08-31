@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-08-30 03:39:34 UTC
+**Generated:** 2026-08-31 03:39:48 UTC
 
 ---
 
@@ -293,10 +293,12 @@
 
 ### Arrow
 
-**Missing from Windfall Fabric (3 checks):**
+**Missing from Windfall Fabric (4 checks):**
 
 - `movement` **Movement** → `windfall.movement.movement`
   - Source: `src/main/java/me/arrow/checks/impl/simulation/Movement.java`
+- `packet` **InteractE** → `windfall.packet.interact e`
+  - Source: `src/main/java/me/arrow/checks/impl/misc/interact/InteractE.java`
 - `combat` **AimH2** → `windfall.combat.aim h2`
   - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/AimH2.java`
 - `combat` **LinearRegression** → `windfall.combat.linear regression`
@@ -366,7 +368,7 @@
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **11 new checks** across competitors that Windfall Fabric doesn't have
+- Found **12 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 
