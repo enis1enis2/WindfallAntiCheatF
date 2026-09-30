@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-09-29 04:15:49 UTC
+**Generated:** 2026-09-30 04:00:18 UTC
 
 ---
 
@@ -293,7 +293,7 @@
 
 ### Arrow
 
-**Missing from Windfall Fabric (4 checks):**
+**Missing from Windfall Fabric (3 checks):**
 
 - `combat` **AimH2** → `windfall.combat.aim h2`
   - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/AimH2.java`
@@ -302,8 +302,6 @@
   - `n = x.length`
   - `xbar = sumx / n`
   - `ybar = sumy / n`
-- `packet` **InteractE** → `windfall.packet.interact e`
-  - Source: `src/main/java/me/arrow/checks/impl/misc/interact/InteractE.java`
 - `movement` **Movement** → `windfall.movement.movement`
   - Source: `src/main/java/me/arrow/checks/impl/simulation/Movement.java`
 
@@ -338,6 +336,8 @@
 - `InteractD` → `Reach A`
 - `InteractA` → `Self Interact A`
 - `VehicleA` → `Vehicle A`
+- `VehicleB` → `Vehicle A`
+- `VehicleC` → `Vehicle A`
 - `ScaffoldA` → `Scaffold A`
 - `ScaffoldB` → `Scaffold A`
 - `ScaffoldC` → `Scaffold A`
@@ -358,6 +358,7 @@
 - `FlyA` → `Flight A`
 - `GravityA` → `Gravity A`
 - `ElytraA` → `Elytra A`
+- `ElytraB` → `Elytra A`
 - `FlyB` → `Flight A`
 - `GravityD` → `Gravity A`
 - `GravityC` → `Gravity A`
@@ -371,7 +372,7 @@
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **12 new checks** across competitors that Windfall Fabric doesn't have
+- Found **11 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 
