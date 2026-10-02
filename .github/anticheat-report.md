@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-10-01 04:11:07 UTC
+**Generated:** 2026-10-02 04:04:55 UTC
 
 ---
 
@@ -293,7 +293,7 @@
 
 ### Arrow
 
-**Missing from Windfall Fabric (3 checks):**
+**Missing from Windfall Fabric (4 checks):**
 
 - `combat` **AimH2** → `windfall.combat.aim h2`
   - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/AimH2.java`
@@ -302,6 +302,10 @@
   - `n = x.length`
   - `xbar = sumx / n`
   - `ybar = sumy / n`
+- `combat` **Vector3dm** → `windfall.combat.vector3dm`
+  - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/aimassistUtil/Vector3dm.java`
+  - `serialVersionUID = -2657651106777219169L`
+  - `epsilon = 1.0E-6`
 - `movement` **Movement** → `windfall.movement.movement`
   - Source: `src/main/java/me/arrow/checks/impl/simulation/Movement.java`
 
@@ -323,8 +327,8 @@
 - `ReachA` → `Reach A`
 - `AimG` → `Aim A`
 - `AimJ` → `Aim A`
+- `AimL` → `Aim A`
 - `AimH` → `Aim A`
-- `AimK` → `Aim A`
 - `AimC` → `Aim A`
 - `AimA` → `Aim A`
 - `AimB` → `Aim A`
@@ -372,7 +376,7 @@
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **11 new checks** across competitors that Windfall Fabric doesn't have
+- Found **12 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 
