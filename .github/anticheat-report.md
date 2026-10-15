@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-10-14 03:33:14 UTC
+**Generated:** 2026-10-15 03:13:18 UTC
 
 ---
 
@@ -337,6 +337,8 @@
 - `AimD` → `Aim A`
 - `AimE` → `Aim A`
 - `KillauraA` → `Kill Aura A`
+- `ExploitA` → `Exploit A`
+- `ExploitB` → `Exploit A`
 - `InteractC` → `Self Interact A`
 - `InteractD` → `Reach A`
 - `InteractA` → `Self Interact A`
