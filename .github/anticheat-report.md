@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-10-18 03:02:28 UTC
+**Generated:** 2026-10-19 03:16:35 UTC
 
 ---
 
@@ -293,7 +293,7 @@
 
 ### Arrow
 
-**Missing from Windfall Fabric (5 checks):**
+**Missing from Windfall Fabric (4 checks):**
 
 - `packet` **Suspicion** → `windfall.packet.suspicion`
   - Source: `src/main/java/me/arrow/checks/impl/suspicion/Suspicion.java`
@@ -307,8 +307,6 @@
   - `n = x.length`
   - `xbar = sumx / n`
   - `ybar = sumy / n`
-- `packet` **InteractF** → `windfall.packet.interact f`
-  - Source: `src/main/java/me/arrow/checks/impl/misc/interact/InteractF.java`
 - `movement` **Movement** → `windfall.movement.movement`
   - Source: `src/main/java/me/arrow/checks/impl/simulation/Movement.java`
 
@@ -340,7 +338,9 @@
 - `ExploitA` → `Exploit A`
 - `ExploitB` → `Exploit A`
 - `InteractC` → `Self Interact A`
+- `FastBreakA` → `FastBreak A`
 - `InteractD` → `Reach A`
+- `FastBreakB` → `FastBreak A`
 - `InteractA` → `Self Interact A`
 - `VehicleA` → `Vehicle A`
 - `VehicleB` → `Vehicle A`
@@ -379,7 +379,7 @@
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **13 new checks** across competitors that Windfall Fabric doesn't have
+- Found **12 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 
