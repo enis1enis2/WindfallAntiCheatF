@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-11-15 04:49:50 UTC
+**Generated:** 2026-11-16 04:46:05 UTC
 
 ---
 
@@ -333,8 +333,12 @@
 
 ### Arrow
 
-**Missing from Windfall Fabric (4 checks):**
+**Missing from Windfall Fabric (5 checks):**
 
+- `movement` **FastBreakTracker** → `windfall.movement.fast break tracker`
+  - Source: `src/main/java/me/arrow/checks/impl/misc/interact/FastBreakTracker.java`
+  - `packetTime = System.nanoTime()`
+  - `packetWorldName = worldName`
 - `packet` **Suspicion** → `windfall.packet.suspicion`
   - Source: `src/main/java/me/arrow/checks/impl/suspicion/Suspicion.java`
   - `WINDOW_SIZE = 30`
@@ -419,7 +423,7 @@
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **32 new checks** across competitors that Windfall Fabric doesn't have
+- Found **33 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 

@@ -613,6 +613,21 @@
   "Arrow": {
     "new_checks": [
       {
+        "name": "fast break tracker",
+        "raw_name": "FastBreakTracker",
+        "category": "movement",
+        "stable_key": "windfall.movement.fast break tracker",
+        "file_path": "src/main/java/me/arrow/checks/impl/misc/interact/FastBreakTracker.java",
+        "constants": {
+          "packetTime": "System.nanoTime()",
+          "packetWorldName": "worldName"
+        },
+        "methods": [
+          "handle",
+          "matches"
+        ]
+      },
+      {
         "name": "suspicion",
         "raw_name": "Suspicion",
         "category": "packet",
