@@ -1,6 +1,6 @@
 # Windfall Fabric Anti-Cheat Monitor Report
 
-**Generated:** 2026-11-19 05:55:23 UTC
+**Generated:** 2026-11-20 05:44:05 UTC
 
 ---
 
@@ -9,64 +9,64 @@
 **Total: 55 checks**
 
 ### Combat
+- `windfall.combat.reach` — Reach A
+- `windfall.combat.multiinteract` — Multi Interact A
+- `windfall.combat.fastheal` — Fast Heal A
 - `windfall.combat.swordblock` — Sword Block A
 - `windfall.combat.killaura` — Kill Aura A
-- `windfall.combat.selfinteract` — Self Interact A
-- `windfall.combat.criticals` — Criticals A
-- `windfall.combat.aim` — Aim A
-- `windfall.combat.fastheal` — Fast Heal A
 - `windfall.combat.macro` — Macro A
-- `windfall.combat.multiinteract` — Multi Interact A
 - `windfall.combat.backtrack` — Backtrack A
-- `windfall.combat.reach` — Reach A
-- `windfall.combat.autoclicker` — Autoclicker A
 - `windfall.combat.hitboxes` — Hitboxes A
+- `windfall.combat.selfinteract` — Self Interact A
+- `windfall.combat.aim` — Aim A
+- `windfall.combat.autoclicker` — Autoclicker A
+- `windfall.combat.criticals` — Criticals A
 
 ### Movement
-- `windfall.movement.nofall` — NoFall A
-- `windfall.movement.baritone` — Baritone A
-- `windfall.movement.scaffold` — Scaffold A
-- `windfall.movement.speed` — Speed A
-- `windfall.movement.step` — Step A
-- `windfall.movement.multiplace` — Multi Place
-- `windfall.movement.wrongbreak` — Wrong Break
-- `windfall.movement.motion` — Motion A
-- `windfall.movement.groundspoof` — Ground Spoof A
-- `windfall.movement.invalidplace` — InvalidPlace A
-- `windfall.movement.positionplace` — Position Place
-- `windfall.movement.farbreak` — FarBreak A
-- `windfall.movement.fastbreak` — FastBreak A
-- `windfall.movement.elytra` — Elytra A
-- `windfall.movement.gravity` — Gravity A
-- `windfall.movement.airliquidbreak` — Air Liquid Break
-- `windfall.movement.airliquidplace` — Air Liquid Place
-- `windfall.movement.rotationplace` — Rotation Place
-- `windfall.movement.velocity` — Velocity A
-- `windfall.movement.fly` — Flight A
-- `windfall.movement.illegalmove` — IllegalMove A
-- `windfall.movement.noswing` — No Swing A
-- `windfall.movement.invalidbreak` — InvalidBreak A
-- `windfall.movement.noslow` — NoSlow A
-- `windfall.movement.phase` — Phase A
-- `windfall.movement.rotationbreak` — Rotation Break A
 - `windfall.movement.positionbreak` — Position Break
-- `windfall.movement.multibreak` — Multi Break
+- `windfall.movement.baritone` — Baritone A
+- `windfall.movement.wrongbreak` — Wrong Break
+- `windfall.movement.fastbreak` — FastBreak A
+- `windfall.movement.step` — Step A
+- `windfall.movement.groundspoof` — Ground Spoof A
+- `windfall.movement.rotationplace` — Rotation Place
 - `windfall.movement.timer` — Timer A
+- `windfall.movement.multiplace` — Multi Place
+- `windfall.movement.scaffold` — Scaffold A
+- `windfall.movement.airliquidplace` — Air Liquid Place
+- `windfall.movement.gravity` — Gravity A
+- `windfall.movement.elytra` — Elytra A
+- `windfall.movement.airliquidbreak` — Air Liquid Break
+- `windfall.movement.velocity` — Velocity A
+- `windfall.movement.speed` — Speed A
 - `windfall.movement.farplace` — FarPlace A
+- `windfall.movement.illegalmove` — IllegalMove A
+- `windfall.movement.rotationbreak` — Rotation Break A
 - `windfall.movement.simulation` — Simulation A
+- `windfall.movement.motion` — Motion A
+- `windfall.movement.multibreak` — Multi Break
+- `windfall.movement.invalidplace` — InvalidPlace A
+- `windfall.movement.farbreak` — FarBreak A
+- `windfall.movement.positionplace` — Position Place
+- `windfall.movement.noslow` — NoSlow A
+- `windfall.movement.fly` — Flight A
+- `windfall.movement.nofall` — NoFall A
+- `windfall.movement.invalidbreak` — InvalidBreak A
+- `windfall.movement.noswing` — No Swing A
+- `windfall.movement.phase` — Phase A
 
 ### Packet
-- `windfall.packet.crash` — Crash A
-- `windfall.packet.cheststealer` — Chest Stealer A
-- `windfall.packet.clientbrand` — Client Brand A
 - `windfall.packet.exploit` — Exploit A
+- `windfall.packet.crash` — Crash A
 - `windfall.packet.chat` — Chat A
-- `windfall.packet.sprint` — Sprint A
-- `windfall.packet.order` — Packet Order A
 - `windfall.packet.transaction` — Transaction A
-- `windfall.packet.vehicle` — Vehicle A
-- `windfall.packet.bad` — Bad Packets A
+- `windfall.packet.clientbrand` — Client Brand A
+- `windfall.packet.sprint` — Sprint A
 - `windfall.packet.creative` — Creative A
+- `windfall.packet.bad` — Bad Packets A
+- `windfall.packet.order` — Packet Order A
+- `windfall.packet.cheststealer` — Chest Stealer A
+- `windfall.packet.vehicle` — Vehicle A
 
 ### Inventory
 - `windfall.inventory.inventory` — Inventory A
@@ -79,273 +79,269 @@
 
 **Missing from Windfall Fabric (3 checks):**
 
-- `movement` **InvalidPlaceFace** → `windfall.movement.invalid place face`
-  - Source: `common/src/main/java/ac/grim/grimac/checks/impl/scaffolding/InvalidPlaceFace.java`
 - `movement` **InvalidPlaceCursor** → `windfall.movement.invalid place cursor`
   - Source: `common/src/main/java/ac/grim/grimac/checks/impl/scaffolding/InvalidPlaceCursor.java`
+- `movement` **InvalidPlaceFace** → `windfall.movement.invalid place face`
+  - Source: `common/src/main/java/ac/grim/grimac/checks/impl/scaffolding/InvalidPlaceFace.java`
 - `combat` **InvalidInteractCursor** → `windfall.combat.invalid interact cursor`
   - Source: `common/src/main/java/ac/grim/grimac/checks/impl/combat/InvalidInteractCursor.java`
   - `scale = (float) packetEntity.getAttributeValue(Attributes.SCALE)`
 
 **Matched with existing Windfall Fabric checks:**
 
-- `Post` → `No Swing A`
-- `ClientBrand` → `Client Brand A`
-- `GroundSpoof` → `Ground Spoof A`
-- `Phase` → `Phase A`
-- `PacketOrderJ` → `Packet Order A`
-- `PacketOrderP` → `Packet Order A`
-- `PacketOrderC` → `Packet Order A`
-- `PacketOrderF` → `Packet Order A`
-- `PacketOrderE` → `Packet Order A`
-- `PacketOrderL` → `Packet Order A`
-- `PacketOrderB` → `Packet Order A`
-- `PacketOrderD` → `Packet Order A`
-- `PacketOrderH` → `Packet Order A`
-- `PacketOrderM` → `Packet Order A`
-- `PacketOrderI` → `Packet Order A`
-- `PacketOrderG` → `Packet Order A`
-- `PacketOrderA` → `Packet Order A`
-- `PacketOrderK` → `Packet Order A`
-- `PacketOrderO` → `Packet Order A`
-- `PacketOrderN` → `Packet Order A`
-- `VehicleB` → `Vehicle A`
-- `VehicleF` → `Vehicle A`
 - `VehicleD` → `Vehicle A`
 - `VehicleE` → `Vehicle A`
+- `VehicleB` → `Vehicle A`
 - `VehicleA` → `Vehicle A`
+- `VehicleF` → `Vehicle A`
+- `FastBreak` → `FastBreak A`
+- `NoSwingBreak` → `No Swing A`
+- `WrongBreak` → `Wrong Break`
+- `PositionBreakA` → `Position Break`
+- `PositionBreakB` → `Position Break`
+- `RotationBreak` → `Rotation Break A`
+- `FarBreak` → `FarBreak A`
+- `MultiBreak` → `Multi Break`
+- `InvalidBreak` → `InvalidBreak A`
+- `AirLiquidBreak` → `Air Liquid Break`
+- `TimerLimit` → `Timer A`
+- `Timer` → `Timer A`
+- `VehicleTimer` → `Timer A`
+- `TickTimer` → `Timer A`
+- `NegativeTimer` → `Timer A`
+- `Post` → `No Swing A`
+- `ClientBrand` → `Client Brand A`
+- `AimModulo360` → `Aim A`
+- `AimDuplicateLook` → `Aim A`
+- `RotationPlace` → `Rotation Place`
+- `DuplicateRotPlace` → `Rotation Place`
+- `FarPlace` → `FarPlace A`
+- `PositionPlace` → `Position Place`
+- `AirLiquidPlace` → `Air Liquid Place`
+- `FabricatedPlace` → `InvalidPlace A`
+- `MultiPlace` → `Multi Place`
 - `Baritone` → `Baritone A`
+- `ElytraH` → `Elytra A`
+- `ElytraI` → `Elytra A`
+- `ElytraD` → `Elytra A`
+- `ElytraC` → `Elytra A`
+- `ElytraA` → `Elytra A`
+- `ElytraB` → `Elytra A`
+- `ElytraF` → `Elytra A`
+- `ElytraE` → `Elytra A`
+- `ElytraG` → `Elytra A`
+- `MultiActionsC` → `Multi Interact A`
+- `MultiActionsF` → `Multi Interact A`
+- `MultiActionsA` → `Multi Interact A`
+- `MultiActionsD` → `Multi Interact A`
+- `MultiActionsB` → `Multi Interact A`
+- `MultiActionsE` → `Multi Interact A`
+- `MultiActionsG` → `Multi Interact A`
+- `FlightA` → `Flight A`
 - `CrashI` → `Crash A`
-- `CrashF` → `Crash A`
+- `CrashD` → `Crash A`
+- `CrashH` → `Crash A`
 - `CrashA` → `Crash A`
 - `CrashB` → `Crash A`
-- `CrashD` → `Crash A`
 - `CrashC` → `Crash A`
-- `CrashG` → `Crash A`
-- `CrashH` → `Crash A`
 - `CrashE` → `Crash A`
-- `DuplicateRotPlace` → `Rotation Place`
-- `PositionPlace` → `Position Place`
-- `RotationPlace` → `Rotation Place`
-- `FarPlace` → `FarPlace A`
-- `FabricatedPlace` → `InvalidPlace A`
-- `AirLiquidPlace` → `Air Liquid Place`
-- `MultiPlace` → `Multi Place`
-- `TickTimer` → `Timer A`
-- `VehicleTimer` → `Timer A`
-- `Timer` → `Timer A`
-- `TimerLimit` → `Timer A`
-- `NegativeTimer` → `Timer A`
-- `NoSlow` → `NoSlow A`
-- `FlightA` → `Flight A`
-- `SelfInteract` → `Self Interact A`
+- `CrashG` → `Crash A`
+- `CrashF` → `Crash A`
 - `MultiInteractA` → `Multi Interact A`
 - `MultiInteractB` → `Multi Interact A`
 - `Reach` → `Reach A`
-- `FarBreak` → `FarBreak A`
-- `PositionBreakA` → `Position Break`
-- `PositionBreakB` → `Position Break`
-- `FastBreak` → `FastBreak A`
-- `NoSwingBreak` → `No Swing A`
-- `RotationBreak` → `Rotation Break A`
-- `WrongBreak` → `Wrong Break`
-- `MultiBreak` → `Multi Break`
-- `AirLiquidBreak` → `Air Liquid Break`
-- `InvalidBreak` → `InvalidBreak A`
-- `ChatB` → `Chat A`
-- `ChatA` → `Chat A`
-- `ChatD` → `Chat A`
-- `ChatC` → `Chat A`
-- `SprintG` → `Sprint A`
-- `SprintF` → `Sprint A`
-- `SprintD` → `Sprint A`
-- `SprintB` → `Sprint A`
-- `SprintC` → `Sprint A`
-- `SprintA` → `Sprint A`
-- `SprintE` → `Sprint A`
-- `NoFall` → `NoFall A`
-- `MultiActionsF` → `Multi Interact A`
-- `MultiActionsB` → `Multi Interact A`
-- `MultiActionsA` → `Multi Interact A`
-- `MultiActionsD` → `Multi Interact A`
-- `MultiActionsC` → `Multi Interact A`
-- `MultiActionsG` → `Multi Interact A`
-- `MultiActionsE` → `Multi Interact A`
-- `ElytraH` → `Elytra A`
-- `ElytraA` → `Elytra A`
-- `ElytraD` → `Elytra A`
-- `ElytraC` → `Elytra A`
-- `ElytraE` → `Elytra A`
-- `ElytraG` → `Elytra A`
-- `ElytraI` → `Elytra A`
-- `ElytraB` → `Elytra A`
-- `ElytraF` → `Elytra A`
+- `SelfInteract` → `Self Interact A`
+- `NoSlow` → `NoSlow A`
+- `Phase` → `Phase A`
+- `GroundSpoof` → `Ground Spoof A`
+- `PacketOrderD` → `Packet Order A`
+- `PacketOrderF` → `Packet Order A`
+- `PacketOrderJ` → `Packet Order A`
+- `PacketOrderE` → `Packet Order A`
+- `PacketOrderA` → `Packet Order A`
+- `PacketOrderI` → `Packet Order A`
+- `PacketOrderH` → `Packet Order A`
+- `PacketOrderM` → `Packet Order A`
+- `PacketOrderN` → `Packet Order A`
+- `PacketOrderO` → `Packet Order A`
+- `PacketOrderK` → `Packet Order A`
+- `PacketOrderC` → `Packet Order A`
+- `PacketOrderL` → `Packet Order A`
+- `PacketOrderP` → `Packet Order A`
+- `PacketOrderG` → `Packet Order A`
+- `PacketOrderB` → `Packet Order A`
 - `ExploitA` → `Exploit A`
 - `ExploitB` → `Exploit A`
-- `AimDuplicateLook` → `Aim A`
-- `AimModulo360` → `Aim A`
+- `ChatA` → `Chat A`
+- `ChatB` → `Chat A`
+- `ChatD` → `Chat A`
+- `ChatC` → `Chat A`
+- `NoFall` → `NoFall A`
+- `SprintB` → `Sprint A`
+- `SprintF` → `Sprint A`
+- `SprintE` → `Sprint A`
+- `SprintD` → `Sprint A`
+- `SprintG` → `Sprint A`
+- `SprintC` → `Sprint A`
+- `SprintA` → `Sprint A`
 
 ### TruthfulAC
 
 **Missing from Windfall Fabric (25 checks):**
 
-- `packet` **BadPacketU** → `windfall.packet.bad packet u`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketU.java`
+- `movement` **BFlyA** → `windfall.movement.bfly a`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/bedrock/BFlyA.java`
+- `movement` **ScaffoldFace** → `windfall.movement.scaffold face`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldFace.java`
+  - `FLAG_BUFFER = 5.0D`
+  - `REPEAT_TICKS = 20`
+  - `clickedId = data.getWorldCache().getBlockId(clicked.getX(), clicked.getY(), clicked.getZ())`
+- `movement` **ScaffoldReach** → `windfall.movement.scaffold reach`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldReach.java`
+  - `JITTER = 0.25D`
+  - `FLAG_BUFFER = 4.0D`
+  - `faceX = clicked.getX() + 0.5D + face.getModX() * 0.5D`
+- `movement` **ScaffoldMotion** → `windfall.movement.scaffold motion`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldMotion.java`
+  - `HISTORY_TICKS = 24`
+  - `WINDOW_TICKS = 16`
+  - `FLAG_BUFFER = 4.0D`
+- `movement` **ScaffoldRotation** → `windfall.movement.scaffold rotation`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldRotation.java`
+  - `EXPANSION = 0.10D`
+  - `FLAG_BUFFER = 6.0D`
+  - `targetX = clicked.getX() + face.getModX()`
+- `combat` **LagA** → `windfall.combat.lag a`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/combat/lag/LagA.java`
+  - `MAX_ATTACK_AGE_TICKS = 40`
+  - `BACKTRACK_TOLERANCE = 0.45D`
+  - `HARD_CEILING = 7.5D`
+- `combat` **LagC** → `windfall.combat.lag c`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/combat/lag/LagC.java`
+  - `MIN_SAMPLES = 20`
+  - `MIN_CORRELATION = 0.85D`
+  - `PING_BIN_COUNT = 4`
+- `combat` **LagB** → `windfall.combat.lag b`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/combat/lag/LagB.java`
+  - `MIN_REACH_TO_TRIGGER = 3.1D`
+  - `WINDOW_MS = 8000`
+  - `MIN_DESYNC_HITS = 3`
+- `packet` **BadPacketN** → `windfall.packet.bad packet n`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketN.java`
+  - `POST_WINDOW_MS = 55L`
 - `packet` **BadPacketP** → `windfall.packet.bad packet p`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketP.java`
   - `POST_WINDOW_MS = 80L`
+- `packet` **BadPacket8** → `windfall.packet.bad packet8`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacket8.java`
+  - `MAX_DIG_DIST = 6.0D`
 - `packet` **BadPacketT** → `windfall.packet.bad packet t`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketT.java`
   - `WINDOW_MS = 10_000L`
   - `SERVER_WINDOW_MS = 15_000L`
   - `GRACE = 3`
-- `packet` **BadPacketV** → `windfall.packet.bad packet v`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketV.java`
-- `packet` **BadPacketQ** → `windfall.packet.bad packet q`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketQ.java`
-- `packet` **BadPacketY** → `windfall.packet.bad packet y`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketY.java`
-- `packet` **BadPacket8** → `windfall.packet.bad packet8`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacket8.java`
-  - `MAX_DIG_DIST = 6.0D`
-- `packet` **BadPacketN** → `windfall.packet.bad packet n`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketN.java`
-  - `POST_WINDOW_MS = 55L`
+- `packet` **BadPacketZ** → `windfall.packet.bad packet z`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketZ.java`
 - `packet` **BadPacketM** → `windfall.packet.bad packet m`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketM.java`
   - `POST_WINDOW_MS = 55L`
-- `packet` **BadPacket5** → `windfall.packet.bad packet5`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacket5.java`
-- `packet` **BadPacketL** → `windfall.packet.bad packet l`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketL.java`
-- `packet` **BadPacketZ** → `windfall.packet.bad packet z`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketZ.java`
-- `packet` **BadPacketF** → `windfall.packet.bad packet f`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketF.java`
 - `packet` **BadPacketR** → `windfall.packet.bad packet r`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketR.java`
   - `POST_WINDOW_MS = 55L`
 - `packet` **BadPacketB** → `windfall.packet.bad packet b`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketB.java`
   - `MAX_FLYING_STREAK = 20`
+- `packet` **BadPacketQ** → `windfall.packet.bad packet q`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketQ.java`
 - `packet` **BadPacketO** → `windfall.packet.bad packet o`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketO.java`
+- `packet` **BadPacketF** → `windfall.packet.bad packet f`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketF.java`
+- `packet` **BadPacketY** → `windfall.packet.bad packet y`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketY.java`
+- `packet` **BadPacketV** → `windfall.packet.bad packet v`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketV.java`
 - `packet` **BadPacket6** → `windfall.packet.bad packet6`
   - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacket6.java`
-- `movement` **BFlyA** → `windfall.movement.bfly a`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/bedrock/BFlyA.java`
-- `combat` **LagA** → `windfall.combat.lag a`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/combat/lag/LagA.java`
-  - `MAX_ATTACK_AGE_TICKS = 40`
-  - `BACKTRACK_TOLERANCE = 0.45D`
-  - `HARD_CEILING = 7.5D`
-- `combat` **LagB** → `windfall.combat.lag b`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/combat/lag/LagB.java`
-  - `MIN_REACH_TO_TRIGGER = 3.1D`
-  - `WINDOW_MS = 8000`
-  - `MIN_DESYNC_HITS = 3`
-- `combat` **LagC** → `windfall.combat.lag c`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/combat/lag/LagC.java`
-  - `MIN_SAMPLES = 20`
-  - `MIN_CORRELATION = 0.85D`
-  - `PING_BIN_COUNT = 4`
-- `movement` **ScaffoldRotation** → `windfall.movement.scaffold rotation`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldRotation.java`
-  - `EXPANSION = 0.10D`
-  - `FLAG_BUFFER = 6.0D`
-  - `targetX = clicked.getX() + face.getModX()`
-- `movement` **ScaffoldMotion** → `windfall.movement.scaffold motion`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldMotion.java`
-  - `HISTORY_TICKS = 24`
-  - `WINDOW_TICKS = 16`
-  - `FLAG_BUFFER = 4.0D`
-- `movement` **ScaffoldReach** → `windfall.movement.scaffold reach`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldReach.java`
-  - `JITTER = 0.25D`
-  - `FLAG_BUFFER = 4.0D`
-  - `faceX = clicked.getX() + 0.5D + face.getModX() * 0.5D`
-- `movement` **ScaffoldFace** → `windfall.movement.scaffold face`
-  - Source: `src/main/java/ret/tawny/truthful/checks/impl/world/scaffold/ScaffoldFace.java`
-  - `FLAG_BUFFER = 5.0D`
-  - `REPEAT_TICKS = 20`
-  - `clickedId = data.getWorldCache().getBlockId(clicked.getX(), clicked.getY(), clicked.getZ())`
+- `packet` **BadPacketL** → `windfall.packet.bad packet l`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketL.java`
+- `packet` **BadPacket5** → `windfall.packet.bad packet5`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacket5.java`
+- `packet` **BadPacketU** → `windfall.packet.bad packet u`
+  - Source: `src/main/java/ret/tawny/truthful/checks/impl/packet/badpacket/BadPacketU.java`
 
 **Matched with existing Windfall Fabric checks:**
 
-- `BadPacketK` → `Bad Packets A`
-- `BadPacketG` → `Bad Packets A`
-- `BadPacketD` → `Bad Packets A`
-- `BadPacketE` → `Bad Packets A`
-- `BadPacketH` → `Bad Packets A`
-- `BadPacketA` → `Bad Packets A`
-- `BadPacketJ` → `Bad Packets A`
-- `BadPacketI` → `Bad Packets A`
-- `PacketOrderC` → `Packet Order A`
-- `PacketOrderE` → `Packet Order A`
-- `PacketOrderB` → `Packet Order A`
-- `PacketOrderD` → `Packet Order A`
-- `PacketOrderA` → `Packet Order A`
-- `TimerA` → `Timer A`
-- `CrasherA` → `Crash A`
-- `InvalidA` → `InvalidPlace A`
-- `SprintB` → `Sprint A`
-- `SprintA` → `Sprint A`
 - `BSpeedA` → `Speed A`
 - `BReachA` → `Reach A`
+- `PhaseA` → `Phase A`
+- `FastBreakA` → `FastBreak A`
+- `AimC` → `Aim A`
+- `AimB` → `Aim A`
+- `AimA` → `Aim A`
+- `HitboxA` → `Hitboxes A`
+- `AnchorAuraA` → `Kill Aura A`
+- `ReachA` → `Reach A`
+- `AutoClickerB` → `Autoclicker A`
+- `AutoClickerC` → `Autoclicker A`
+- `AutoClickerD` → `Autoclicker A`
+- `AutoClickerA` → `Autoclicker A`
+- `AutoClickerE` → `Autoclicker A`
+- `KillAuraD` → `Kill Aura A`
+- `KillAuraC` → `Kill Aura A`
+- `KillAuraE` → `Kill Aura A`
+- `KillAuraG` → `Kill Aura A`
+- `KillAuraB` → `Kill Aura A`
+- `KillAuraH` → `Kill Aura A`
+- `KillAuraF` → `Kill Aura A`
+- `CrystalAuraA` → `Kill Aura A`
 - `MovementCheckSupport` → `Phase A`
+- `VelocityD` → `Velocity A`
+- `VelocityC` → `Velocity A`
+- `VelocityA` → `Velocity A`
+- `VelocityB` → `Velocity A`
+- `GroundSpoofD` → `Ground Spoof A`
+- `GroundSpoofB` → `Ground Spoof A`
+- `GroundSpoofG` → `Ground Spoof A`
+- `GroundSpoofF` → `Ground Spoof A`
+- `GroundSpoofC` → `Ground Spoof A`
+- `GroundSpoofE` → `Ground Spoof A`
 - `BaritoneA` → `Baritone A`
 - `BaritoneC` → `Baritone A`
 - `BaritoneB` → `Baritone A`
-- `GroundSpoofD` → `Ground Spoof A`
-- `GroundSpoofG` → `Ground Spoof A`
-- `GroundSpoofF` → `Ground Spoof A`
-- `GroundSpoofE` → `Ground Spoof A`
-- `GroundSpoofC` → `Ground Spoof A`
-- `GroundSpoofB` → `Ground Spoof A`
-- `VelocityD` → `Velocity A`
-- `VelocityA` → `Velocity A`
-- `VelocityC` → `Velocity A`
-- `VelocityB` → `Velocity A`
-- `InventoryA` → `Inventory A`
 - `Simulation` → `Simulation A`
-- `KillAuraF` → `Kill Aura A`
-- `KillAuraE` → `Kill Aura A`
-- `KillAuraB` → `Kill Aura A`
-- `KillAuraH` → `Kill Aura A`
-- `KillAuraC` → `Kill Aura A`
-- `KillAuraG` → `Kill Aura A`
-- `KillAuraD` → `Kill Aura A`
-- `CrystalAuraA` → `Kill Aura A`
-- `HitboxA` → `Hitboxes A`
-- `AnchorAuraA` → `Kill Aura A`
-- `AutoClickerC` → `Autoclicker A`
-- `AutoClickerD` → `Autoclicker A`
-- `AutoClickerE` → `Autoclicker A`
-- `AutoClickerB` → `Autoclicker A`
-- `AutoClickerA` → `Autoclicker A`
-- `AimC` → `Aim A`
-- `AimA` → `Aim A`
-- `AimB` → `Aim A`
-- `ReachA` → `Reach A`
+- `InventoryA` → `Inventory A`
 - `RaycastA` → `Reach A`
-- `PhaseA` → `Phase A`
-- `FastBreakA` → `FastBreak A`
+- `TimerA` → `Timer A`
+- `CrasherA` → `Crash A`
+- `PacketOrderD` → `Packet Order A`
+- `PacketOrderE` → `Packet Order A`
+- `PacketOrderA` → `Packet Order A`
+- `PacketOrderC` → `Packet Order A`
+- `PacketOrderB` → `Packet Order A`
+- `BadPacketH` → `Bad Packets A`
+- `BadPacketI` → `Bad Packets A`
+- `BadPacketE` → `Bad Packets A`
+- `BadPacketD` → `Bad Packets A`
+- `BadPacketK` → `Bad Packets A`
+- `BadPacketJ` → `Bad Packets A`
+- `BadPacketA` → `Bad Packets A`
+- `BadPacketG` → `Bad Packets A`
+- `InvalidA` → `InvalidPlace A`
+- `SprintB` → `Sprint A`
+- `SprintA` → `Sprint A`
 
 ### Arrow
 
-**Missing from Windfall Fabric (5 checks):**
+**Missing from Windfall Fabric (6 checks):**
 
+- `packet` **VehicleSupport** → `windfall.packet.vehicle support`
+  - Source: `src/main/java/me/arrow/checks/impl/misc/vehicle/VehicleSupport.java`
+  - `sinceIceTicks = 1000`
 - `movement` **FastBreakTracker** → `windfall.movement.fast break tracker`
   - Source: `src/main/java/me/arrow/checks/impl/misc/interact/FastBreakTracker.java`
   - `packetTime = System.nanoTime()`
   - `packetWorldName = worldName`
-- `combat` **AimH2** → `windfall.combat.aim h2`
-  - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/AimH2.java`
-- `combat` **LinearRegression** → `windfall.combat.linear regression`
-  - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/aimassistUtil/LinearRegression.java`
-  - `n = x.length`
-  - `xbar = sumx / n`
-  - `ybar = sumy / n`
 - `packet` **Suspicion** → `windfall.packet.suspicion`
   - Source: `src/main/java/me/arrow/checks/impl/suspicion/Suspicion.java`
   - `WINDOW_SIZE = 30`
@@ -353,77 +349,84 @@
   - `NUM_FEATURES = 15`
 - `movement` **Movement** → `windfall.movement.movement`
   - Source: `src/main/java/me/arrow/checks/impl/simulation/Movement.java`
+- `combat` **AimH2** → `windfall.combat.aim h2`
+  - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/AimH2.java`
+- `combat` **LinearRegression** → `windfall.combat.linear regression`
+  - Source: `src/main/java/me/arrow/checks/impl/combat/aimassist/aimassistUtil/LinearRegression.java`
+  - `n = x.length`
+  - `xbar = sumx / n`
+  - `ybar = sumy / n`
 
 **Matched with existing Windfall Fabric checks:**
 
 - `VehicleB` → `Vehicle A`
 - `VehicleA` → `Vehicle A`
 - `VehicleC` → `Vehicle A`
-- `TimerC` → `Timer A`
-- `TimerB` → `Timer A`
-- `TimerA` → `Timer A`
 - `ExploitA` → `Exploit A`
 - `ExploitB` → `Exploit A`
-- `InventoryA` → `Inventory A`
-- `FastBreakB` → `FastBreak A`
-- `InteractC` → `Self Interact A`
-- `FastBreakA` → `FastBreak A`
-- `InteractA` → `Self Interact A`
-- `InteractD` → `Reach A`
+- `TimerB` → `Timer A`
+- `TimerC` → `Timer A`
+- `TimerA` → `Timer A`
 - `ScaffoldD` → `Scaffold A`
-- `ScaffoldC` → `Scaffold A`
 - `ScaffoldB` → `Scaffold A`
 - `ScaffoldA` → `Scaffold A`
-- `SpeedB` → `Speed A`
-- `OmniSprintA` → `Sprint A`
-- `SpeedA` → `Speed A`
+- `ScaffoldC` → `Scaffold A`
+- `InventoryA` → `Inventory A`
+- `FastBreakB` → `FastBreak A`
+- `FastBreakA` → `FastBreak A`
+- `InteractC` → `Multi Interact A`
+- `InteractA` → `Multi Interact A`
+- `InteractD` → `Reach A`
+- `VelocityA` → `Velocity A`
+- `VelocityB` → `Velocity A`
+- `HitboxA` → `Hitboxes A`
+- `AimG` → `Aim A`
+- `AimC` → `Aim A`
+- `AimH` → `Aim A`
+- `AimB` → `Aim A`
+- `AimA` → `Aim A`
+- `AimD` → `Aim A`
+- `AimF` → `Aim A`
+- `AimE` → `Aim A`
+- `ReachA` → `Reach A`
+- `MacroB` → `Macro A`
+- `AutoClickerF` → `Autoclicker A`
+- `AutoClickerB` → `Autoclicker A`
+- `AutoClickerG` → `Autoclicker A`
+- `AutoClickerC` → `Autoclicker A`
+- `AutoClickerD` → `Autoclicker A`
+- `MacroA` → `Macro A`
+- `AutoClickerH` → `Autoclicker A`
+- `BackTrackA` → `Backtrack A`
+- `BackTrackB` → `Backtrack A`
+- `KillauraA` → `Kill Aura A`
+- `GroundC` → `Ground Spoof A`
+- `GroundB` → `Ground Spoof A`
+- `GroundA` → `Ground Spoof A`
+- `GravityD` → `Gravity A`
+- `FlyA` → `Flight A`
+- `GravityB` → `Gravity A`
 - `ElytraA` → `Elytra A`
 - `FlyB` → `Flight A`
-- `GravityD` → `Gravity A`
+- `ElytraB` → `Elytra A`
 - `GravityA` → `Gravity A`
 - `GravityC` → `Gravity A`
-- `GravityB` → `Gravity A`
-- `FlyA` → `Flight A`
-- `ElytraB` → `Elytra A`
-- `GroundB` → `Ground Spoof A`
-- `GroundC` → `Ground Spoof A`
-- `GroundA` → `Ground Spoof A`
+- `OmniSprintA` → `Sprint A`
+- `SpeedA` → `Speed A`
+- `SpeedB` → `Speed A`
 - `IllegalMoveC` → `IllegalMove A`
 - `IllegalMoveB` → `IllegalMove A`
 - `MotionE` → `Motion A`
 - `MotionD` → `Motion A`
 - `MotionA` → `Motion A`
 - `MotionB` → `Motion A`
-- `AimC` → `Aim A`
-- `AimA` → `Aim A`
-- `AimE` → `Aim A`
-- `AimG` → `Aim A`
-- `AimD` → `Aim A`
-- `AimH` → `Aim A`
-- `AimB` → `Aim A`
-- `AimF` → `Aim A`
-- `KillauraA` → `Kill Aura A`
-- `HitboxA` → `Hitboxes A`
-- `VelocityA` → `Velocity A`
-- `VelocityB` → `Velocity A`
-- `BackTrackA` → `Backtrack A`
-- `BackTrackB` → `Backtrack A`
-- `AutoClickerC` → `Autoclicker A`
-- `MacroA` → `Macro A`
-- `MacroB` → `Macro A`
-- `AutoClickerD` → `Autoclicker A`
-- `AutoClickerF` → `Autoclicker A`
-- `AutoClickerH` → `Autoclicker A`
-- `AutoClickerB` → `Autoclicker A`
-- `AutoClickerG` → `Autoclicker A`
-- `ReachA` → `Reach A`
 
 ---
 
 ## Summary
 
 - Windfall Fabric has **55 checks**
-- Found **33 new checks** across competitors that Windfall Fabric doesn't have
+- Found **34 new checks** across competitors that Windfall Fabric doesn't have
 
 ## Recommendations
 
